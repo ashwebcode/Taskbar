@@ -19,6 +19,9 @@ jobs:
           java-version: '17'  # Will use Java 17
           distribution: 'temurin'  # Latest, adoptable JDK
 
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))" >> $GITHUB_ENV
+
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
