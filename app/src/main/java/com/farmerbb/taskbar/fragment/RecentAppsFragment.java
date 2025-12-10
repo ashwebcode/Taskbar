@@ -168,7 +168,7 @@ public class RecentAppsFragment extends SettingsFragment implements SharedPrefer
                 dialog.show();
                 break;
             case PREF_REFRESH_FREQUENCY:
-                final int max2 = 20;
+                final int max2 = 600;
 
                 AlertDialog.Builder builder2 = new AlertDialog.Builder(getActivity());
                 LinearLayout dialogLayout2 = (LinearLayout) View.inflate(getActivity(), R.layout.tb_seekbar_pref, null);
