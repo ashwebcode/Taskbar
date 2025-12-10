@@ -497,4 +497,5 @@
     <string name="tb_override_freeform_unsupported_description">Diese Version von Android unterstützt den Freiform-Modus auf Displays nicht, deren Standard-Fenstermodus nicht auf Freiform eingestellt ist (wie z. B. das integrierte Gerätedisplay).\n\nWenn Sie glauben, dass dies ein Fehler ist, aktivieren Sie diese Einstellung, um die »Freiform-Modus«-Einstellung zu erzwingen.</string>
 
     <string name="tb_shizuku_successful">Erweiterte Einstellungen über Shizuku erfolgreich aktiviert</string>
+    <string name="tb_taskbar_toast">Refreshing recent apps</string>
 </resources>
