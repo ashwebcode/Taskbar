@@ -11,13 +11,13 @@ jobs:
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         
       - name: Set up JDK 17
-        uses: actions/setup-java@v2  # Upgrade to v2
+        uses: actions/setup-java@v3  # Change to v3
         with:
-          java-version: '17'  # Ensures Java 17 is used
-          distribution: 'adopt'  # Specify the distribution
+          java-version: '17'  # Will use Java 17
+          distribution: 'temurin'  # Latest, adoptable JDK
 
       - name: Make Gradle executable
         run: chmod +x ./gradlew
