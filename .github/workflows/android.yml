@@ -14,10 +14,13 @@ jobs:
         uses: actions/checkout@v3
         
       - name: Set up JDK 17
-        uses: actions/setup-java@v3  # Change to v3
+        uses: actions/setup-java@v3
         with:
-          java-version: '17'  # Will use Java 17
-          distribution: 'temurin'  # Latest, adoptable JDK
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Check Java version
+        run: java -version  # This will help confirm the Java version being used
 
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))" >> $GITHUB_ENV
