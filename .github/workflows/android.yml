@@ -35,5 +35,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: taskbar-app-release
-          path: app/build/outputs/apk/release/taskbar-app-release.apk  # Use your confirmed path here
+          name: app-release
+          path: app/build/outputs/apk/release/app-release.apk  # Use your confirmed path here
