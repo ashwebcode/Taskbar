@@ -1,10 +1,7 @@
 name: Build APK
 
-on: 
-  push:
-    branches:
-      - master  # Trigger on push to master branch
-  workflow_dispatch: # Allows manual triggering from the Actions tab
+on:
+  workflow_dispatch:  # This allows the workflow to be triggered manually
 
 jobs:
   build:
@@ -34,3 +31,9 @@ jobs:
 
       - name: Build Release APK
         run: ./gradlew assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v2
+        with:
+          name: taskbar-app-release
+          path: app/build/outputs/apk/release/taskbar-app-release.apk  # Use your confirmed path here
