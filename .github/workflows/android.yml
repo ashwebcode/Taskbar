@@ -30,7 +30,7 @@ jobs:
         run: ./gradlew clean
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleDebug # assembleRelease
 
       - name: List Output Directory
         run: ls -R app/build/outputs/apk/
@@ -39,4 +39,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: apk-artifacts
-          path: app/build/outputs/apk/paid/release/*.apk  # Use your confirmed path here
+          path: app/build/outputs/apk/paid/debug/*.apk  # Use your confirmed path here
+          # path: app/build/outputs/apk/paid/release/*.apk  # Use your confirmed path here
