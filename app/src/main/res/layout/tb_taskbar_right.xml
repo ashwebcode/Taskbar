@@ -119,7 +119,7 @@
             android:orientation="vertical"
             android:id="@+id/dashboard_button"
             android:layout_width="40dp"
-            android:layout_height="20dp"
+            android:layout_height="@dimen/tb_icon_size"
             android:layout_marginStart="8dp">
 
                 <LinearLayout
