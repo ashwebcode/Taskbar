@@ -296,8 +296,24 @@ public class U {
                 && context.checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED;
     }
 
-    public static void showToast(Context context, int message) {
+    /* public static void showToast(Context context, int message) {
         showToast(context, context.getString(message), Toast.LENGTH_SHORT);
+    } */
+
+    // new toast method to return errors
+    public static void showToast(Context context, int message) {
+        try {
+            String toastMessage = context.getString(message);
+            showToast(context, toastMessage, Toast.LENGTH_SHORT);
+        } catch (Resources.NotFoundException e) {
+            // Handle the error and show a default error message
+            String errorMessage = "Error: String resource not found.";
+            showToast(context, errorMessage, Toast.LENGTH_SHORT);
+        } catch (Exception e) {
+            // Handle any other unexpected exceptions
+            String errorMessage = "An unexpected error occurred.";
+            showToast(context, errorMessage, Toast.LENGTH_SHORT);
+        }
     }
 
     public static void showToastLong(Context context, int message) {
