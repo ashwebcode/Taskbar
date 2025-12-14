@@ -817,8 +817,10 @@ public class TaskbarController extends UIController {
             }
         }
 
-        // Get list of all recently used apps
-        // TODO: U.showToast(context, R.string.tb_taskbar_toast);
+        // TODO: Get list of all recent apps
+        if (context && R.string.tb_taskbar_toast) {
+           U.showToast(context, R.string.tb_taskbar_toast);
+        }
         List<AppEntry> usageStatsList = realNumOfPinnedApps < maxNumOfEntries ? getAppEntries() : new ArrayList<>();
         if(usageStatsList.size() > 0 || realNumOfPinnedApps > 0 || fullLength) {
             if(realNumOfPinnedApps < maxNumOfEntries) {
