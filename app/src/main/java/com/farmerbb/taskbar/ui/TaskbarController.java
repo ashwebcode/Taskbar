@@ -54,6 +54,7 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
+import android.widget.Toast;
 
 import androidx.annotation.VisibleForTesting;
 import androidx.core.content.ContextCompat;
@@ -818,7 +819,7 @@ public class TaskbarController extends UIController {
         }
 
         // TODO: Get list of all recent apps
-        U.showToast(context, R.string.tb_taskbar_toast);
+        U.showToast(context, "Refreshing recent apps", Toast.LENGTH_LONG);
         List<AppEntry> usageStatsList = realNumOfPinnedApps < maxNumOfEntries ? getAppEntries() : new ArrayList<>();
         if(usageStatsList.size() > 0 || realNumOfPinnedApps > 0 || fullLength) {
             if(realNumOfPinnedApps < maxNumOfEntries) {
