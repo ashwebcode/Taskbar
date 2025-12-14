@@ -819,7 +819,7 @@ public class TaskbarController extends UIController {
         }
 
         // TODO: Get list of all recent apps
-        U.showToast(this, "Refreshing recent apps", Toast.LENGTH_LONG);
+        U.showToast(getActivity(), "Refreshing recent apps", Toast.LENGTH_LONG);
         List<AppEntry> usageStatsList = realNumOfPinnedApps < maxNumOfEntries ? getAppEntries() : new ArrayList<>();
         if(usageStatsList.size() > 0 || realNumOfPinnedApps > 0 || fullLength) {
             if(realNumOfPinnedApps < maxNumOfEntries) {
