@@ -305,13 +305,9 @@ public class U {
         try {
             String toastMessage = context.getString(message);
             showToast(context, toastMessage, Toast.LENGTH_SHORT);
-        } catch (Resources.NotFoundException e) {
-            // Handle the error and show a default error message
-            String errorMessage = "Error: String resource not found.";
-            showToast(context, errorMessage, Toast.LENGTH_SHORT);
         } catch (Exception e) {
-            // Handle any other unexpected exceptions
-            String errorMessage = "An unexpected error occurred.";
+            // Show the caught exception message in the toast
+            String errorMessage = "Error: " + e.getMessage();
             showToast(context, errorMessage, Toast.LENGTH_SHORT);
         }
     }
