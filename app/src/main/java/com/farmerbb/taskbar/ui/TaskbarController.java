@@ -330,7 +330,7 @@ public class TaskbarController extends UIController {
             navbarButtons.setVisibility(View.GONE);
 
         if(refreshButton != null) {
-            refreshButton.setOnClickListener(v -> updateRecentApps(false));
+            refreshButton.setOnClickListener(v -> handler.post(() -> updateRecentApps(false)));
         }
 
         sysTrayEnabled = U.isSystemTrayEnabled(context);
