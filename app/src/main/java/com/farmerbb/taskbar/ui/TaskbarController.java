@@ -54,7 +54,6 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
-import android.widget.Toast;
 
 import androidx.annotation.VisibleForTesting;
 import androidx.core.content.ContextCompat;
@@ -116,6 +115,7 @@ public class TaskbarController extends UIController {
     private Button button;
     private Space space;
     private FrameLayout dashboardButton;
+    private ImageView refreshButton;
     private LinearLayout navbarButtons;
     private LinearLayout sysTrayLayout;
     private FrameLayout sysTrayParentLayout;
@@ -322,11 +322,16 @@ public class TaskbarController extends UIController {
         if(buttonLayoutToHide != null) buttonLayoutToHide.setVisibility(View.GONE);
 
         dashboardButton = layout.findViewById(R.id.dashboard_button);
+        refreshButton = layout.findViewById(R.id.refresh_button);
         navbarButtons = layout.findViewById(R.id.navbar_buttons);
         dashboardEnabled = drawDashboardButton(context, layout, dashboardButton, accentColor);
         navbarButtonsEnabled = drawNavbarButtons(context, layout, pref, accentColor);
         if(!navbarButtonsEnabled)
             navbarButtons.setVisibility(View.GONE);
+
+        if(refreshButton != null) {
+            refreshButton.setOnClickListener(v -> updateRecentApps(false));
+        }
 
         sysTrayEnabled = U.isSystemTrayEnabled(context);
 
@@ -793,6 +798,8 @@ public class TaskbarController extends UIController {
         if(isScreenOff()) return;
 
         updateSystemTray();
+        // Show a short toast when a non-initial refresh is occurring
+        if(!firstRefresh) U.showToast(context, R.string.tb_refreshing_taskbar);
 
         SharedPreferences pref = U.getSharedPreferences(context);
         final PackageManager pm = context.getPackageManager();
@@ -818,8 +825,7 @@ public class TaskbarController extends UIController {
             }
         }
 
-        // TODO: Get list of all recent apps
-        U.showToast(getActivity(), "Refreshing recent apps", Toast.LENGTH_LONG);
+        // Get list of all recently used apps
         List<AppEntry> usageStatsList = realNumOfPinnedApps < maxNumOfEntries ? getAppEntries() : new ArrayList<>();
         if(usageStatsList.size() > 0 || realNumOfPinnedApps > 0 || fullLength) {
             if(realNumOfPinnedApps < maxNumOfEntries) {

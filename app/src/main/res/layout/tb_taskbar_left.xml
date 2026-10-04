@@ -185,6 +185,13 @@
             android:layout_height="wrap_content"
             android:visibility="gone"/>
 
+        <ImageView
+            android:id="@+id/refresh_button"
+            android:layout_width="@dimen/tb_icon_size"
+            android:layout_height="@dimen/tb_icon_size"
+            android:src="@drawable/tb_refresh"
+            android:scaleType="center" />
+
         <Space
             android:id="@+id/space"
             android:layout_width="4dp"
