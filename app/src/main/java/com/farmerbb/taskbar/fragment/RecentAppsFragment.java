@@ -168,7 +168,7 @@ public class RecentAppsFragment extends SettingsFragment implements SharedPrefer
                 dialog.show();
                 break;
             case PREF_REFRESH_FREQUENCY:
-                final int max2 = 300; // 300 is 5 minutes
+                final int max2 = 2000;
 
                 AlertDialog.Builder builder2 = new AlertDialog.Builder(getActivity());
                 LinearLayout dialogLayout2 = (LinearLayout) View.inflate(getActivity(), R.layout.tb_seekbar_pref, null);
@@ -207,6 +207,7 @@ public class RecentAppsFragment extends SettingsFragment implements SharedPrefer
                             double progress = seekBar2.getProgress() * 0.5;
 
                             pref.edit().putString(PREF_REFRESH_FREQUENCY, Double.toString(progress)).apply();
+                            U.showToast(getActivity(), "Refreshing Taskbar apps...");
                             updateRefreshFrequency(true);
                         })
                         .setNegativeButton(R.string.tb_action_cancel, null);

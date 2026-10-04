@@ -46,6 +46,13 @@
         android:layout_width="@dimen/tb_icon_size"
         android:layout_height="@dimen/tb_icon_size" />
 
+    <ImageView
+        android:id="@+id/refresh_button"
+        android:layout_width="@dimen/tb_icon_size"
+        android:layout_height="@dimen/tb_icon_size"
+        android:src="@drawable/tb_refresh"
+        android:scaleType="center" />
+
     <FrameLayout
         android:orientation="vertical"
         android:id="@+id/dashboard_button"
