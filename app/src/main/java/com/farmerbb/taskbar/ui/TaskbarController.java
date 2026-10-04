@@ -330,7 +330,7 @@ public class TaskbarController extends UIController {
             navbarButtons.setVisibility(View.GONE);
 
         if(refreshButton != null) {
-            refreshButton.setOnClickListener(v -> handler.post(() -> updateRecentApps(false)));
+            refreshButton.setOnClickListener(v -> updateRecentApps(false));
         }
 
         sysTrayEnabled = U.isSystemTrayEnabled(context);
@@ -799,7 +799,7 @@ public class TaskbarController extends UIController {
 
         updateSystemTray();
         // Show a short toast when a non-initial refresh is occurring
-        if(!firstRefresh) U.showToast(context, R.string.tb_refreshing_taskbar);
+        if(!firstRefresh) handler.post(() -> U.showToast(context, R.string.tb_refreshing_taskbar));
 
         SharedPreferences pref = U.getSharedPreferences(context);
         final PackageManager pm = context.getPackageManager();
