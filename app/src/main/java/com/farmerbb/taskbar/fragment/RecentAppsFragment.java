@@ -207,7 +207,7 @@ public class RecentAppsFragment extends SettingsFragment implements SharedPrefer
                             double progress = seekBar2.getProgress() * 0.5;
 
                             pref.edit().putString(PREF_REFRESH_FREQUENCY, Double.toString(progress)).apply();
-                            U.showToast(getActivity(), "Refreshing Taskbar apps...");
+                            U.showToast(getActivity(), R.string.tb_refreshing_taskbar);
                             updateRefreshFrequency(true);
                         })
                         .setNegativeButton(R.string.tb_action_cancel, null);
