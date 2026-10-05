@@ -202,7 +202,8 @@
         android:layout_width="@dimen/tb_icon_size"
         android:layout_height="@dimen/tb_icon_size"
         android:src="@drawable/tb_refresh"
-        android:scaleType="center" />
+        android:scaleType="center"
+        android:layout_marginBottom="8dp" />
 
     <Space
         android:id="@+id/space_alt"
