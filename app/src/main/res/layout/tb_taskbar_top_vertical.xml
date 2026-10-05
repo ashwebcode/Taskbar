@@ -51,8 +51,7 @@
         android:layout_width="@dimen/tb_icon_size"
         android:layout_height="@dimen/tb_icon_size"
         android:src="@drawable/tb_refresh"
-        android:scaleType="center"
-        android:layout_marginTop="8dp" />
+        android:scaleType="center" />
 
     <FrameLayout
         android:orientation="vertical"
