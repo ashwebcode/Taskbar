@@ -157,6 +157,7 @@ public class TaskbarController extends UIController {
     private int notificationCount = 0;
     private int numOfSysTrayIcons = 0;
 
+    private Context taskbarContext;
     private boolean matchParent;
     private Runnable updateParamsRunnable;
 
@@ -263,7 +264,8 @@ public class TaskbarController extends UIController {
         SharedPreferences pref = U.getSharedPreferences(context);
         boolean altButtonConfig = pref.getBoolean(PREF_ALT_BUTTON_CONFIG, false);
 
-        layout = (LinearLayout) LayoutInflater.from(U.wrapContext(context)).inflate(layoutId, null);
+        taskbarContext = U.wrapTaskbarContext(context);
+        layout = (LinearLayout) LayoutInflater.from(taskbarContext).inflate(layoutId, null);
         taskbar = layout.findViewById(R.id.taskbar);
         scrollView = layout.findViewById(R.id.taskbar_scrollview);
 
@@ -281,7 +283,7 @@ public class TaskbarController extends UIController {
         space.setOnClickListener(v -> toggleTaskbar(true));
 
         startButton = layout.findViewById(R.id.start_button);
-        drawStartButton(context, startButton, pref);
+        drawStartButton(taskbarContext, startButton, pref);
 
         refreshInterval = (int) (Float.parseFloat(pref.getString(PREF_REFRESH_FREQUENCY, "1")) * 1000);
         if(refreshInterval == 0)
@@ -336,7 +338,7 @@ public class TaskbarController extends UIController {
         sysTrayEnabled = U.isSystemTrayEnabled(context);
 
         if(sysTrayEnabled) {
-            drawSysTray(context, layoutId, layout);
+            drawSysTray(taskbarContext, layoutId, layout);
         }
 
         layout.setBackgroundColor(backgroundTint);
@@ -1012,7 +1014,7 @@ public class TaskbarController extends UIController {
                                    boolean fullLength,
                                    int numOfEntries) {
         DisplayInfo display = U.getDisplayInfo(context, true);
-        int recentsSize = context.getResources().getDimensionPixelSize(R.dimen.tb_icon_size) * numOfEntries;
+        int recentsSize = U.getTaskbarIconSize(context) * numOfEntries;
         float maxRecentsSize = fullLength ? Float.MAX_VALUE : recentsSize;
         int maxScreenSize;
 
@@ -1578,7 +1580,7 @@ public class TaskbarController extends UIController {
     }
 
     private View getView(List<AppEntry> list, int position) {
-        View convertView = View.inflate(context, R.layout.tb_icon, null);
+        View convertView = View.inflate(taskbarContext, R.layout.tb_icon, null);
 
         final AppEntry entry = list.get(position);
         final SharedPreferences pref = U.getSharedPreferences(context);

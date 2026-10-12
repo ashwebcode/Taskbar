@@ -37,6 +37,10 @@
         android:key="accent_color_pref"
         android:title="@string/tb_pref_title_accent_color" />
 
+    <Preference
+        android:key="taskbar_size"
+        android:title="@string/tb_pref_title_taskbar_size" />
+
     <ListPreference
         android:defaultValue="default"
         android:entries="@array/tb_pref_start_button_image_list"

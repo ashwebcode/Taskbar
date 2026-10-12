@@ -57,6 +57,7 @@ public class AppearanceFragment extends SettingsFragment {
         findPreference(PREF_RESET_COLORS).setOnPreferenceClickListener(this);
         findPreference(PREF_BACKGROUND_TINT_PREF).setOnPreferenceClickListener(this);
         findPreference(PREF_ACCENT_COLOR_PREF).setOnPreferenceClickListener(this);
+        findPreference(PREF_TASKBAR_SIZE).setOnPreferenceClickListener(this);
 
         if(U.isAndroidGeneric(getActivity())) {
             String[] array = getResources().getStringArray(R.array.tb_pref_start_button_image_list);
@@ -80,6 +81,7 @@ public class AppearanceFragment extends SettingsFragment {
 
         findPreference(PREF_BACKGROUND_TINT_PREF).setSummary("#" + String.format("%08x", U.getBackgroundTint(getActivity())).toUpperCase());
         findPreference(PREF_ACCENT_COLOR_PREF).setSummary("#" + String.format("%08x", U.getAccentColor(getActivity())).toUpperCase());
+        findPreference(PREF_TASKBAR_SIZE).setSummary(getTaskbarSizeSummary());
     }
 
     @Override
@@ -154,6 +156,9 @@ public class AppearanceFragment extends SettingsFragment {
                 break;
             case PREF_ACCENT_COLOR_PREF:
                 showColorPicker(ColorPickerType.ACCENT_COLOR);
+                break;
+            case PREF_TASKBAR_SIZE:
+                showTaskbarSizePicker();
                 break;
         }
 
@@ -325,5 +330,51 @@ public class AppearanceFragment extends SettingsFragment {
 
         AlertDialog dialog = builder.create();
         dialog.show();
+    }
+
+    private String getTaskbarSizeSummary() {
+        return getString(R.string.tb_taskbar_size_percent, U.getTaskbarSizePercent(getActivity()));
+    }
+
+    private void showTaskbarSizePicker() {
+        final SharedPreferences pref = U.getSharedPreferences(getActivity());
+
+        ScrollView dialogLayout = (ScrollView) View.inflate(getActivity(), R.layout.tb_taskbar_size_pref, null);
+
+        final TextView sizeValue = dialogLayout.findViewById(R.id.taskbar_size_value);
+        final SeekBar sizeSeekBar = dialogLayout.findViewById(R.id.taskbar_size_seekbar);
+        sizeSeekBar.setMax(U.MAX_TASKBAR_SIZE - U.MIN_TASKBAR_SIZE);
+
+        sizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                sizeValue.setText(getString(R.string.tb_taskbar_size_percent,
+                        progress + U.MIN_TASKBAR_SIZE));
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        sizeSeekBar.setProgress(U.getTaskbarSizePercent(getActivity()) - U.MIN_TASKBAR_SIZE);
+
+        new AlertDialog.Builder(getActivity())
+                .setTitle(R.string.tb_pref_title_taskbar_size)
+                .setView(dialogLayout)
+                .setPositiveButton(R.string.tb_action_ok, (dialog, which) -> {
+                    pref.edit().putString(
+                            PREF_TASKBAR_SIZE,
+                            Integer.toString(sizeSeekBar.getProgress() + U.MIN_TASKBAR_SIZE)
+                    ).apply();
+
+                    findPreference(PREF_TASKBAR_SIZE).setSummary(getTaskbarSizeSummary());
+
+                    U.restartTaskbar(getActivity());
+                })
+                .setNegativeButton(R.string.tb_action_cancel, null)
+                .show();
     }
 }

@@ -741,7 +741,7 @@ public class HomeActivityDelegate extends AppCompatActivity implements UIHost {
         if(desktopIcons == null) return;
 
         boolean taskbarIsVertical = TaskbarPosition.isVertical(this);
-        int iconSize = getResources().getDimensionPixelSize(R.dimen.tb_icon_size);
+        int iconSize = U.getTaskbarIconSize(this);
         int desktopIconSize = getResources().getDimensionPixelSize(R.dimen.tb_start_menu_grid_width);
 
         int columns = (layout.getWidth() - (taskbarIsVertical ? iconSize : 0)) / desktopIconSize;
@@ -947,7 +947,7 @@ public class HomeActivityDelegate extends AppCompatActivity implements UIHost {
         if(desktopIcons == null || fab == null) return;
 
         String position = TaskbarPosition.getTaskbarPosition(this);
-        int iconSize = getResources().getDimensionPixelSize(R.dimen.tb_icon_size);
+        int iconSize = U.getTaskbarIconSize(this);
 
         int left = 0;
         int top = 0;
