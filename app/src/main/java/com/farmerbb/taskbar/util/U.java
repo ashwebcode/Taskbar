@@ -522,7 +522,7 @@ public class U {
         int bottom = display.height;
 
         int iconSize = isOverridingFreeformHack(context) && !LauncherHelper.getInstance().isOnHomeScreen(context)
-                ? 0 : context.getResources().getDimensionPixelSize(R.dimen.tb_icon_size);
+                ? 0 : getTaskbarIconSize(context);
 
         if(TaskbarPosition.isVerticalLeft(position))
             left = left + iconSize;
@@ -645,7 +645,7 @@ public class U {
         int right = display.width;
         int bottom = display.height;
 
-        int iconSize = context.getResources().getDimensionPixelSize(R.dimen.tb_icon_size);
+        int iconSize = getTaskbarIconSize(context);
 
         if(TaskbarPosition.isVerticalLeft(position))
             right = iconSize;
@@ -729,7 +729,7 @@ public class U {
                 ? (display.height - getStatusBarHeight(context)) / density
                 : display.width / density;
 
-        float iconSize = context.getResources().getDimension(R.dimen.tb_icon_size) / density;
+        float iconSize = getTaskbarIconSize(context) / density;
 
         int userMaxNumOfColumns = Integer.parseInt(pref.getString(PREF_MAX_NUM_OF_RECENTS, "10"));
 
@@ -1179,6 +1179,39 @@ public class U {
         return getBaseTaskbarSizeStart(context) + getBaseTaskbarSizeEnd(context, null);
     }
 
+    public static final int DEFAULT_TASKBAR_SIZE = 100;
+    public static final int MIN_TASKBAR_SIZE = 25;
+    public static final int MAX_TASKBAR_SIZE = 150;
+
+    /**
+     * Returns the taskbar size percentage chosen by the user, clamped to a sane range.
+     */
+    public static int getTaskbarSizePercent(Context context) {
+        SharedPreferences pref = getSharedPreferences(context);
+
+        int taskbarSize;
+        try {
+            taskbarSize = Integer.parseInt(pref.getString(PREF_TASKBAR_SIZE, Integer.toString(DEFAULT_TASKBAR_SIZE)));
+        } catch(NumberFormatException e) {
+            taskbarSize = DEFAULT_TASKBAR_SIZE;
+        }
+
+        return Math.max(MIN_TASKBAR_SIZE, Math.min(MAX_TASKBAR_SIZE, taskbarSize));
+    }
+
+    public static float getTaskbarScale(Context context) {
+        return getTaskbarSizePercent(context) / 100f;
+    }
+
+    /**
+     * Returns the size of the taskbar's icons, and by extension the thickness of the
+     * taskbar itself, scaled by the user's taskbar size preference.
+     */
+    public static int getTaskbarIconSize(Context context) {
+        return Math.round(context.getResources().getDimensionPixelSize(R.dimen.tb_icon_size)
+                * getTaskbarScale(context));
+    }
+
     public static float getBaseTaskbarSizeStart(Context context) {
         SharedPreferences pref = getSharedPreferences(context);
         float baseTaskbarSize = context.getResources().getDimension(R.dimen.tb_base_size_start_plus_divider);
@@ -1209,7 +1242,7 @@ public class U {
         if(navbarButtonsEnabled)
             baseTaskbarSize += context.getResources().getDimension(R.dimen.tb_navbar_buttons_margin);
 
-        return baseTaskbarSize;
+        return baseTaskbarSize * getTaskbarScale(context);
     }
 
     public static float getBaseTaskbarSizeEnd(Context context, Map<Integer, Boolean> sysTrayIconStates) {
@@ -1232,7 +1265,7 @@ public class U {
             baseTaskbarSize += sysTraySize;
         }
 
-        return baseTaskbarSize;
+        return baseTaskbarSize * getTaskbarScale(context);
     }
 
     private static void startTaskbarService(Context context, boolean fullRestart) {
@@ -1668,6 +1701,28 @@ public class U {
             theme = R.style.Taskbar;
 
         return new ContextThemeWrapper(context, theme);
+    }
+
+    /**
+     * Like {@link #wrapContext(Context)}, but the resources of the returned context are
+     * scaled according to the user's taskbar size preference, so that any layout inflated
+     * with it is resized along with the taskbar.
+     */
+    public static Context wrapTaskbarContext(Context context) {
+        int theme;
+        if(isDarkTheme(context))
+            theme = R.style.Taskbar_Dark;
+        else
+            theme = R.style.Taskbar;
+
+        float taskbarScale = getTaskbarScale(context);
+        if(taskbarScale == 1.0f)
+            return new ContextThemeWrapper(context, theme);
+
+        Configuration configuration = new Configuration(context.getResources().getConfiguration());
+        configuration.densityDpi = Math.round(configuration.densityDpi * taskbarScale);
+
+        return new ContextThemeWrapper(context.createConfigurationContext(configuration), theme);
     }
 
     public static boolean isPlayStoreRelease(Context context) {

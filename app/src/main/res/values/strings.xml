@@ -280,6 +280,8 @@
     <string name="tb_dashboard_tutorial">Click anywhere on screen to add a widget to the dashboard</string>
 
     <string name="tb_pref_title_accent_color">Accent color</string>
+    <string name="tb_pref_title_taskbar_size">Resize taskbar to</string>
+    <string name="tb_taskbar_size_percent">%1$d%%</string>
     <string name="tb_reset_colors">Reset colors to default</string>
 
     <string name="tb_visual_feedback">Visual feedback when selecting icons</string>

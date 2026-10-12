@@ -196,6 +196,20 @@ public class StartMenuController extends UIController {
         layout = (StartMenuLayout) LayoutInflater.from(U.wrapContext(context)).inflate(layoutId, null);
         layout.setAlpha(0);
 
+        // Keep the Start menu sitting flush against the taskbar, whatever size it is
+        View startMenuSpace = layout.findViewById(R.id.start_menu_space);
+        if(startMenuSpace != null) {
+            ViewGroup.LayoutParams spaceParams = startMenuSpace.getLayoutParams();
+            int taskbarSize = U.getTaskbarIconSize(context);
+
+            if(TaskbarPosition.isVertical(taskbarPosition))
+                spaceParams.width = taskbarSize;
+            else
+                spaceParams.height = taskbarSize;
+
+            startMenuSpace.setLayoutParams(spaceParams);
+        }
+
         startMenu = layout.findViewById(R.id.start_menu);
 
         if((shouldShowSearchBox && !hasHardwareKeyboard) || Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP_MR1)
