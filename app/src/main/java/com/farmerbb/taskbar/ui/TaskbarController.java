@@ -281,9 +281,12 @@ public class TaskbarController extends UIController {
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 -1,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM,
-                getBottomMargin(context)
+                applyVerticalOffsetFlags(
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                                | WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM, context),
+                getBottomMarginWithOffset(context)
         );
+        params.layoutsOverNavbar = isVerticalOffsetActive(context);
 
         // Determine where to show the taskbar on screen
         String taskbarPosition = TaskbarPosition.getTaskbarPosition(context);
@@ -297,6 +300,33 @@ public class TaskbarController extends UIController {
 
         taskbarContext = U.wrapTaskbarContext(context);
         layout = (LinearLayout) LayoutInflater.from(taskbarContext).inflate(layoutId, null);
+
+        // Inset the taskbar from the screen edges it reaches, so that the icons and the collapse
+        // button by a curved edge stay within reach
+        int startMargin = U.getTaskbarStartMargin(context);
+        int endMargin = U.getTaskbarEndMargin(context);
+        boolean anchoredRight = TaskbarPosition.isRight(taskbarPosition);
+
+        int left = anchoredRight ? 0 : startMargin;
+        int right = anchoredRight ? startMargin : 0;
+        int top = 0;
+        int bottom = 0;
+
+        if(TaskbarPosition.isVertical(taskbarPosition)) {
+            // A vertical taskbar runs down the screen, so its other end is the far end of that
+            // column rather than the far side of the window
+            if(TaskbarPosition.isBottom(taskbarPosition))
+                top = endMargin;
+            else
+                bottom = endMargin;
+        } else if(anchoredRight)
+            left = endMargin;
+        else
+            right = endMargin;
+
+        layout.setPadding(layout.getPaddingLeft() + left, layout.getPaddingTop() + top,
+                layout.getPaddingRight() + right, layout.getPaddingBottom() + bottom);
+
         taskbar = layout.findViewById(R.id.taskbar);
         scrollView = layout.findViewById(R.id.taskbar_scrollview);
 
@@ -1099,7 +1129,8 @@ public class TaskbarController extends UIController {
         if(TaskbarPosition.isVertical(context)) {
             maxScreenSize = Math.max(0, display.height
                     - U.getStatusBarHeight(context)
-                    - baseTotal);
+                    - baseTotal
+                    - U.getTaskbarEndMargin(context));
 
             params.height = (int) Math.min(maxRecentsSize, maxScreenSize)
                     + context.getResources().getDimensionPixelSize(R.dimen.tb_divider_size);
@@ -1139,7 +1170,10 @@ public class TaskbarController extends UIController {
                 } catch (NullPointerException ignored) {}
             }
         } else {
-            maxScreenSize = Math.max(0, display.width - baseTotal);
+            maxScreenSize = Math.max(0, display.width
+                    - baseTotal
+                    - U.getTaskbarStartMargin(context)
+                    - U.getTaskbarEndMargin(context));
 
             params.width = (int) Math.min(maxRecentsSize, maxScreenSize)
                     + context.getResources().getDimensionPixelSize(R.dimen.tb_divider_size);
@@ -1436,7 +1470,8 @@ public class TaskbarController extends UIController {
                 navbarButtons.setVisibility(View.VISIBLE);
 
             if(isShowingRecents && scrollView.getVisibility() == View.GONE)
-                scrollView.setVisibility(View.INVISIBLE);
+                scrollView.setVisibility(
+                        getScrollViewVisibilityOnShow(currentTaskbarIds.size() > 0));
 
             if(sysTrayEnabled)
                 sysTrayParentLayout.setVisibility(View.VISIBLE);
@@ -1451,6 +1486,18 @@ public class TaskbarController extends UIController {
 
             U.newHandler().post(() -> U.sendBroadcast(context, ACTION_SHOW_START_MENU_SPACE));
         }
+    }
+
+    /**
+     * The visibility the app list comes back with when the taskbar is shown again.  A list that
+     * is already drawn is revealed right away: expanding normally returns the same recents, so
+     * the redraw that used to lift the INVISIBLE hold never runs, and the icons would stay
+     * hidden.  With nothing retained the hold stays, since the strip is genuinely empty until
+     * the first refresh pass fills it in.
+     */
+    @VisibleForTesting
+    int getScrollViewVisibilityOnShow(boolean hasRetainedRecents) {
+        return hasRetainedRecents ? View.VISIBLE : View.INVISIBLE;
     }
 
     private void hideTaskbar(boolean clearVariables) {

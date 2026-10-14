@@ -19,6 +19,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.provider.Settings;
 import android.view.View;
+import android.view.WindowManager;
 
 import com.farmerbb.taskbar.BuildConfig;
 import com.farmerbb.taskbar.R;
@@ -72,6 +73,54 @@ public abstract class UIController {
                 && TaskbarPosition.isBottom(context) ? U.getNavbarHeight(context) : -1;
     }
 
+    /**
+     * How far, in pixels, the windows anchored to the bottom of the screen should be lowered,
+     * so that the taskbar sits closer to the bottom edge than it otherwise would.
+     */
+    protected int getVerticalOffset(Context context) {
+        if(!TaskbarPosition.isBottom(context) || !U.isTaskbarVerticalOffsetEnabled(context))
+            return 0;
+
+        return U.getTaskbarVerticalOffset(context);
+    }
+
+    /**
+     * Whether the windows anchored to the bottom of the screen are currently being lowered into
+     * the space the navigation bar reserves for itself.
+     */
+    protected boolean isVerticalOffsetActive(Context context) {
+        return getVerticalOffset(context) > 0;
+    }
+
+    /**
+     * Adds the layout flags a window needs in order to be drawn down to the bottom edge of the
+     * screen.  These alone do not move a window into the navigation bar's space; the window also
+     * has to stop fitting the bottom system bar inset, which is what {@link
+     * ViewParams#layoutsOverNavbar} does.
+     */
+    protected int applyVerticalOffsetFlags(int flags, Context context) {
+        if(!isVerticalOffsetActive(context))
+            return flags;
+
+        return flags
+                | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+    }
+
+    /**
+     * The bottom margin to use for a window anchored to the bottom of the screen.  Once a
+     * vertical offset is set, the window is laid out against the bottom of the screen itself, so
+     * the offset is measured from there rather than from the top of the navigation bar.  The
+     * window also has to be flagged with {@link ViewParams#layoutsOverNavbar} for that to hold.
+     */
+    protected int getBottomMarginWithOffset(Context context) {
+        int offset = getVerticalOffset(context);
+        if(offset <= 0)
+            return getBottomMargin(context);
+
+        return U.getNavbarHeight(context) - offset;
+    }
+
     protected void applyMarginFix(UIHost host, View layout, ViewParams params) {
         if(U.getCurrentApiVersion() <= 29.0 || !U.getDisplayInfo(context).displayDefaultsToFreeform)
             return;
@@ -81,7 +130,14 @@ public abstract class UIController {
             if(isImeVisible != prevImeVisibility) {
                 prevImeVisibility = isImeVisible;
 
-                ViewParams newParams = isImeVisible ? params.updateBottomMargin(0) : params;
+                ViewParams newParams = params;
+                if(isImeVisible) {
+                    // Fit the navigation bar again while the keyboard is up, so that the taskbar
+                    // is laid out above it rather than behind it
+                    newParams = params.updateBottomMargin(0);
+                    newParams.layoutsOverNavbar = false;
+                }
+
                 host.updateViewLayout(layout, newParams);
 
                 if(isImeFixDisabled() && !U.isLibrary(context)) {

@@ -568,6 +568,79 @@ class UTest {
         Assert.assertEquals(initialSize + systemTraySize - iconSize,
                 U.getBaseTaskbarSize(context), 0f)
         prefs.edit().remove(Constants.PREF_SHOW_START_MENU_ICON).apply()
+        // The refresh button takes up an icon's worth of space while refreshing manually
+        prefs.edit().putBoolean(Constants.PREF_ONLY_REFRESH_MANUALLY, true).apply()
+        Assert.assertEquals(initialSize + systemTraySize + iconSize,
+                U.getBaseTaskbarSize(context), 0f)
+        // ...and none at all otherwise, since the button is hidden then
+        prefs.edit().remove(Constants.PREF_ONLY_REFRESH_MANUALLY).apply()
+        Assert.assertEquals(initialSize + systemTraySize,
+                U.getBaseTaskbarSize(context), 0f)
+    }
+
+    @Test
+    fun testGetTaskbarVerticalOffset() {
+        val prefs = U.getSharedPreferences(context)
+        val maxOffsetDp = U.getMaxTaskbarVerticalOffsetDp(context)
+
+        // With nothing stored the taskbar keeps its default position
+        Assert.assertEquals(0, U.getTaskbarVerticalOffsetDp(context))
+        Assert.assertEquals(0, U.getTaskbarVerticalOffset(context))
+        Assert.assertFalse(U.isTaskbarVerticalOffsetEnabled(context))
+
+        // Nonsense values fall back to the default rather than crashing
+        prefs.edit().putString(Constants.PREF_TASKBAR_VERTICAL_OFFSET, "garbage").apply()
+        Assert.assertEquals(0, U.getTaskbarVerticalOffsetDp(context))
+
+        // Negative values are treated as no offset
+        prefs.edit().putString(Constants.PREF_TASKBAR_VERTICAL_OFFSET, "-10").apply()
+        Assert.assertEquals(0, U.getTaskbarVerticalOffsetDp(context))
+
+        // The offset never exceeds the height of the navigation bar, which is both the space
+        // below the taskbar and the point at which it sits flush with the bottom of the screen
+        prefs.edit().putString(Constants.PREF_TASKBAR_VERTICAL_OFFSET,
+                Integer.toString(maxOffsetDp + 100)).apply()
+        Assert.assertEquals(maxOffsetDp, U.getTaskbarVerticalOffsetDp(context))
+        Assert.assertEquals(U.getNavbarHeight(context), U.getTaskbarVerticalOffset(context))
+
+        prefs.edit().putString(Constants.PREF_TASKBAR_VERTICAL_OFFSET, "0").apply()
+        Assert.assertEquals(0, U.getTaskbarVerticalOffset(context))
+
+        prefs.edit().remove(Constants.PREF_TASKBAR_VERTICAL_OFFSET).apply()
+    }
+
+    @Test
+    fun testGetTaskbarMargins() {
+        val prefs = U.getSharedPreferences(context)
+
+        // With nothing stored the taskbar's contents are not inset at all
+        Assert.assertEquals(0, U.getTaskbarStartMarginDp(context))
+        Assert.assertEquals(0, U.getTaskbarStartMargin(context))
+        Assert.assertEquals(0, U.getTaskbarEndMarginDp(context))
+        Assert.assertEquals(0, U.getTaskbarEndMargin(context))
+
+        // Nonsense values fall back to the default rather than crashing
+        prefs.edit().putString(Constants.PREF_TASKBAR_START_MARGIN, "garbage")
+                .putString(Constants.PREF_TASKBAR_END_MARGIN, "garbage").apply()
+        Assert.assertEquals(0, U.getTaskbarStartMarginDp(context))
+        Assert.assertEquals(0, U.getTaskbarEndMarginDp(context))
+
+        // Negative values are treated as no margin
+        prefs.edit().putString(Constants.PREF_TASKBAR_START_MARGIN, "-10")
+                .putString(Constants.PREF_TASKBAR_END_MARGIN, "-10").apply()
+        Assert.assertEquals(0, U.getTaskbarStartMarginDp(context))
+        Assert.assertEquals(0, U.getTaskbarEndMarginDp(context))
+
+        // Neither margin grows past the maximum, which is what the pickers offer
+        prefs.edit().putString(Constants.PREF_TASKBAR_START_MARGIN,
+                Integer.toString(U.MAX_TASKBAR_MARGIN + 100))
+                .putString(Constants.PREF_TASKBAR_END_MARGIN,
+                        Integer.toString(U.MAX_TASKBAR_MARGIN + 100)).apply()
+        Assert.assertEquals(U.MAX_TASKBAR_MARGIN, U.getTaskbarStartMarginDp(context))
+        Assert.assertEquals(U.MAX_TASKBAR_MARGIN, U.getTaskbarEndMarginDp(context))
+
+        prefs.edit().remove(Constants.PREF_TASKBAR_START_MARGIN)
+                .remove(Constants.PREF_TASKBAR_END_MARGIN).apply()
     }
 
     @Test
@@ -951,6 +1024,19 @@ class UTest {
     fun testApplyDisplayCutoutModeToWithBelowVersion() {
         val layoutParams = WindowManager.LayoutParams()
         Assert.assertFalse(U.applyDisplayCutoutModeTo(layoutParams))
+    }
+
+    @Test
+    fun testStopFittingBottomSystemBarInsetWithRAndAboveVersion() {
+        val layoutParams = WindowManager.LayoutParams()
+        Assert.assertTrue(U.stopFittingBottomSystemBarInset(layoutParams))
+    }
+
+    @Test
+    @Config(sdk = [28])
+    fun testStopFittingBottomSystemBarInsetWithBelowVersion() {
+        val layoutParams = WindowManager.LayoutParams()
+        Assert.assertFalse(U.stopFittingBottomSystemBarInset(layoutParams))
     }
 
     @Test

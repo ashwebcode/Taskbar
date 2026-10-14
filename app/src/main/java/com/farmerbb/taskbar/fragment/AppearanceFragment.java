@@ -28,6 +28,7 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -58,6 +59,9 @@ public class AppearanceFragment extends SettingsFragment {
         findPreference(PREF_BACKGROUND_TINT_PREF).setOnPreferenceClickListener(this);
         findPreference(PREF_ACCENT_COLOR_PREF).setOnPreferenceClickListener(this);
         findPreference(PREF_TASKBAR_SIZE).setOnPreferenceClickListener(this);
+        findPreference(PREF_TASKBAR_VERTICAL_OFFSET).setOnPreferenceClickListener(this);
+        findPreference(PREF_TASKBAR_START_MARGIN).setOnPreferenceClickListener(this);
+        findPreference(PREF_TASKBAR_END_MARGIN).setOnPreferenceClickListener(this);
 
         if(U.isAndroidGeneric(getActivity())) {
             String[] array = getResources().getStringArray(R.array.tb_pref_start_button_image_list);
@@ -82,6 +86,17 @@ public class AppearanceFragment extends SettingsFragment {
         findPreference(PREF_BACKGROUND_TINT_PREF).setSummary("#" + String.format("%08x", U.getBackgroundTint(getActivity())).toUpperCase());
         findPreference(PREF_ACCENT_COLOR_PREF).setSummary("#" + String.format("%08x", U.getAccentColor(getActivity())).toUpperCase());
         findPreference(PREF_TASKBAR_SIZE).setSummary(getTaskbarSizeSummary());
+
+        Preference verticalOffsetPref = findPreference(PREF_TASKBAR_VERTICAL_OFFSET);
+        if(U.isLayoutOverNavbarSupported())
+            verticalOffsetPref.setSummary(getTaskbarVerticalOffsetSummary());
+        else {
+            verticalOffsetPref.setEnabled(false);
+            verticalOffsetPref.setSummary(R.string.tb_taskbar_offset_unsupported);
+        }
+
+        findPreference(PREF_TASKBAR_START_MARGIN).setSummary(getTaskbarStartMarginSummary());
+        findPreference(PREF_TASKBAR_END_MARGIN).setSummary(getTaskbarEndMarginSummary());
     }
 
     @Override
@@ -159,6 +174,15 @@ public class AppearanceFragment extends SettingsFragment {
                 break;
             case PREF_TASKBAR_SIZE:
                 showTaskbarSizePicker();
+                break;
+            case PREF_TASKBAR_VERTICAL_OFFSET:
+                showTaskbarVerticalOffsetPicker();
+                break;
+            case PREF_TASKBAR_START_MARGIN:
+                showTaskbarStartMarginPicker();
+                break;
+            case PREF_TASKBAR_END_MARGIN:
+                showTaskbarEndMarginPicker();
                 break;
         }
 
@@ -371,6 +395,133 @@ public class AppearanceFragment extends SettingsFragment {
                     ).apply();
 
                     findPreference(PREF_TASKBAR_SIZE).setSummary(getTaskbarSizeSummary());
+
+                    U.restartTaskbar(getActivity());
+                })
+                .setNegativeButton(R.string.tb_action_cancel, null)
+                .show();
+    }
+
+    private String getTaskbarVerticalOffsetSummary() {
+        int offset = U.getTaskbarVerticalOffsetDp(getActivity());
+
+        return offset == 0
+                ? getString(R.string.tb_taskbar_offset_default)
+                : getString(R.string.tb_taskbar_offset_dp, offset);
+    }
+
+    private void showTaskbarVerticalOffsetPicker() {
+        final SharedPreferences pref = U.getSharedPreferences(getActivity());
+
+        ScrollView dialogLayout = (ScrollView) View.inflate(getActivity(), R.layout.tb_taskbar_offset_pref, null);
+
+        final TextView offsetValue = dialogLayout.findViewById(R.id.taskbar_offset_value);
+        final SeekBar offsetSeekBar = dialogLayout.findViewById(R.id.taskbar_offset_seekbar);
+        offsetSeekBar.setMax(U.getMaxTaskbarVerticalOffsetDp(getActivity()));
+
+        offsetSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                offsetValue.setText(progress == 0
+                        ? getString(R.string.tb_taskbar_offset_default)
+                        : getString(R.string.tb_taskbar_offset_dp, progress));
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        offsetSeekBar.setProgress(U.getTaskbarVerticalOffsetDp(getActivity()));
+
+        new AlertDialog.Builder(getActivity())
+                .setTitle(R.string.tb_pref_title_taskbar_vertical_offset)
+                .setView(dialogLayout)
+                .setPositiveButton(R.string.tb_action_ok, (dialog, which) -> {
+                    pref.edit().putString(
+                            PREF_TASKBAR_VERTICAL_OFFSET,
+                            Integer.toString(offsetSeekBar.getProgress())
+                    ).apply();
+
+                    findPreference(PREF_TASKBAR_VERTICAL_OFFSET).setSummary(getTaskbarVerticalOffsetSummary());
+
+                    U.restartTaskbar(getActivity());
+                })
+                .setNegativeButton(R.string.tb_action_cancel, null)
+                .show();
+    }
+
+    private String getTaskbarStartMarginSummary() {
+        return getTaskbarMarginSummary(U.getTaskbarStartMarginDp(getActivity()));
+    }
+
+    private String getTaskbarEndMarginSummary() {
+        return getTaskbarMarginSummary(U.getTaskbarEndMarginDp(getActivity()));
+    }
+
+    private String getTaskbarMarginSummary(int margin) {
+        return margin == 0
+                ? getString(R.string.tb_taskbar_margin_default)
+                : getString(R.string.tb_taskbar_margin_dp, margin);
+    }
+
+    private void showTaskbarStartMarginPicker() {
+        showTaskbarMarginPicker(PREF_TASKBAR_START_MARGIN,
+                U.getTaskbarStartMarginDp(getActivity()),
+                R.string.tb_pref_title_taskbar_start_margin,
+                R.string.tb_taskbar_start_margin_blurb);
+    }
+
+    private void showTaskbarEndMarginPicker() {
+        showTaskbarMarginPicker(PREF_TASKBAR_END_MARGIN,
+                U.getTaskbarEndMarginDp(getActivity()),
+                R.string.tb_pref_title_taskbar_end_margin,
+                R.string.tb_taskbar_end_margin_blurb);
+    }
+
+    private void showTaskbarMarginPicker(final String preference,
+                                         int initialMargin,
+                                         int title,
+                                         int blurb) {
+        final SharedPreferences pref = U.getSharedPreferences(getActivity());
+
+        LinearLayout dialogLayout = (LinearLayout) View.inflate(getActivity(), R.layout.tb_seekbar_pref, null);
+
+        final TextView marginValue = dialogLayout.findViewById(R.id.seekbar_value);
+        final SeekBar marginSeekBar = dialogLayout.findViewById(R.id.seekbar);
+        marginSeekBar.setMax(U.MAX_TASKBAR_MARGIN);
+
+        marginSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                marginValue.setText(getTaskbarMarginSummary(progress));
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        marginSeekBar.setProgress(initialMargin);
+
+        TextView blurbView = dialogLayout.findViewById(R.id.blurb);
+        blurbView.setText(blurb);
+
+        new AlertDialog.Builder(getActivity())
+                .setTitle(title)
+                .setView(dialogLayout)
+                .setPositiveButton(R.string.tb_action_ok, (dialog, which) -> {
+                    pref.edit().putString(
+                            preference,
+                            Integer.toString(marginSeekBar.getProgress())
+                    ).apply();
+
+                    findPreference(preference).setSummary(
+                            getTaskbarMarginSummary(marginSeekBar.getProgress()));
 
                     U.restartTaskbar(getActivity());
                 })

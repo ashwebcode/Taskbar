@@ -212,7 +212,10 @@ public class Constants {
     public static final String PREF_SYSTEM_SETTINGS = "system_settings";
     public static final String PREF_SYS_TRAY = "sys_tray";
     public static final String PREF_TASKBAR_ACTIVE = "taskbar_active";
+    public static final String PREF_TASKBAR_END_MARGIN = "taskbar_end_margin";
     public static final String PREF_TASKBAR_SIZE = "taskbar_size";
+    public static final String PREF_TASKBAR_START_MARGIN = "taskbar_start_margin";
+    public static final String PREF_TASKBAR_VERTICAL_OFFSET = "taskbar_vertical_offset";
     public static final String PREF_TASKER_ENABLED = "tasker_enabled";
     public static final String PREF_THEME = "theme";
     public static final String PREF_TIME_OF_SERVICE_START = "time_of_service_start";

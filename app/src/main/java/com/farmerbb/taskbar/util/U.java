@@ -68,6 +68,7 @@ import androidx.appcompat.view.ContextThemeWrapper;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -763,6 +764,130 @@ public class U {
         return isNavbarHidden ? 0 : getSystemDimen(context, "navigation_bar_height");
     }
 
+    public static final int DEFAULT_TASKBAR_VERTICAL_OFFSET = 0;
+
+    /**
+     * Roughly how tall the navigation bar is on this device, in dp.  Used to size the picker for
+     * {@link #getTaskbarVerticalOffset(Context)}.
+     */
+    public static int getMaxTaskbarVerticalOffsetDp(Context context) {
+        float density = context.getResources().getDisplayMetrics().density;
+        int navbarHeightDp = Math.round(getNavbarHeight(context) / density);
+
+        // Fall back to a typical navigation bar height, so the picker stays usable on devices
+        // that use gesture navigation and report a much smaller navbar
+        return Math.max(24, navbarHeightDp);
+    }
+
+    /**
+     * How far below its default position the user wants the taskbar to sit, in dp.  Kept in dp
+     * so the setting survives a change of display density.
+     */
+    public static int getTaskbarVerticalOffsetDp(Context context) {
+        SharedPreferences pref = getSharedPreferences(context);
+
+        int offset;
+        try {
+            offset = Integer.parseInt(pref.getString(PREF_TASKBAR_VERTICAL_OFFSET,
+                    Integer.toString(DEFAULT_TASKBAR_VERTICAL_OFFSET)));
+        } catch(NumberFormatException e) {
+            offset = DEFAULT_TASKBAR_VERTICAL_OFFSET;
+        }
+
+        return Math.max(0, Math.min(getMaxTaskbarVerticalOffsetDp(context), offset));
+    }
+
+    /**
+     * The taskbar offset in pixels.  Clamped to the height of the navigation bar, which is both
+     * the space below the taskbar that the user can see, and the point at which the taskbar sits
+     * flush against the bottom of the screen.
+     */
+    public static int getTaskbarVerticalOffset(Context context) {
+        float density = context.getResources().getDisplayMetrics().density;
+        int offset = Math.round(getTaskbarVerticalOffsetDp(context) * density);
+
+        return Math.min(offset, getNavbarHeight(context));
+    }
+
+    /**
+     * Whether the window manager on this device lets a window opt out of fitting the bottom
+     * system bar inset.  The vertical offset depends on it, because a window that fits the
+     * navigation bar is laid out above it and cannot be moved any lower.
+     */
+    public static boolean isLayoutOverNavbarSupported() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+    }
+
+    /**
+     * Stops the window manager from insetting the given window for the navigation bar, so that
+     * gravity and the bottom margin are resolved against the bottom of the screen instead of the
+     * top of the navigation bar.  Without this, a positive bottom margin moves the window up.
+     */
+    public static boolean stopFittingBottomSystemBarInset(WindowManager.LayoutParams params) {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            params.setFitInsetsSides(
+                    WindowInsets.Side.LEFT | WindowInsets.Side.TOP | WindowInsets.Side.RIGHT);
+            return true;
+        }
+
+        return false;
+    }
+
+    public static boolean isTaskbarVerticalOffsetEnabled(Context context) {
+        return isLayoutOverNavbarSupported() && getTaskbarVerticalOffset(context) > 0;
+    }
+
+    public static final int DEFAULT_TASKBAR_MARGIN = 0;
+    public static final int MAX_TASKBAR_MARGIN = 48;
+
+    /**
+     * How far, in dp, the taskbar's contents should be inset from the edge of the screen the
+     * taskbar is attached to.  Kept in dp so the setting survives a change of display density.
+     */
+    public static int getTaskbarStartMarginDp(Context context) {
+        return getTaskbarMarginDp(context, PREF_TASKBAR_START_MARGIN);
+    }
+
+    /**
+     * How far, in dp, the taskbar's contents should be inset from the other end of the taskbar,
+     * which is where the collapse button sits.
+     */
+    public static int getTaskbarEndMarginDp(Context context) {
+        return getTaskbarMarginDp(context, PREF_TASKBAR_END_MARGIN);
+    }
+
+    /**
+     * The taskbar's start margin in pixels.
+     */
+    public static int getTaskbarStartMargin(Context context) {
+        float density = context.getResources().getDisplayMetrics().density;
+
+        return Math.round(getTaskbarStartMarginDp(context) * density);
+    }
+
+    /**
+     * The taskbar's end margin in pixels.
+     */
+    public static int getTaskbarEndMargin(Context context) {
+        float density = context.getResources().getDisplayMetrics().density;
+
+        return Math.round(getTaskbarEndMarginDp(context) * density);
+    }
+
+    private static int getTaskbarMarginDp(Context context, String preference) {
+        SharedPreferences pref = getSharedPreferences(context);
+
+        int margin;
+        try {
+            margin = Integer.parseInt(pref.getString(preference,
+                    Integer.toString(DEFAULT_TASKBAR_MARGIN)));
+        } catch(NumberFormatException e) {
+            margin = DEFAULT_TASKBAR_MARGIN;
+        }
+
+        return Math.max(0, Math.min(MAX_TASKBAR_MARGIN, margin));
+    }
+
     private static int getSystemDimen(Context context, String id) {
         context = getDisplayContext(context);
 
@@ -1220,6 +1345,12 @@ public class U {
         // its space belongs to the app list instead
         if(!pref.getBoolean(PREF_SHOW_START_MENU_ICON, true))
             baseTaskbarSize -= context.getResources().getDimension(R.dimen.tb_icon_size);
+
+        // The refresh button is only shown while refreshing manually, but it takes up as much
+        // room as an icon when it is.  Leaving it out makes the taskbar wider than the screen,
+        // which pushes the collapse button off the far edge.
+        if(isOnlyRefreshManuallyEnabled(context))
+            baseTaskbarSize += context.getResources().getDimension(R.dimen.tb_icon_size);
 
         baseTaskbarSize += pref.getBoolean(PREF_ALT_BUTTON_CONFIG, false)
                 ? context.getResources().getDimension(R.dimen.tb_base_size_collapse_button) : 0;
