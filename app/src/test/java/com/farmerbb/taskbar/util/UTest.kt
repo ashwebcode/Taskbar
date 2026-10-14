@@ -563,6 +563,11 @@ class UTest {
         val systemTraySize = context.resources.getDimension(R.dimen.tb_systray_size)
         Assert.assertEquals(initialSize + systemTraySize,
                 U.getBaseTaskbarSize(context), 0f)
+        // Hiding the start menu button gives the space it took up to the app list
+        prefs.edit().putBoolean(Constants.PREF_SHOW_START_MENU_ICON, false).apply()
+        Assert.assertEquals(initialSize + systemTraySize - iconSize,
+                U.getBaseTaskbarSize(context), 0f)
+        prefs.edit().remove(Constants.PREF_SHOW_START_MENU_ICON).apply()
     }
 
     @Test

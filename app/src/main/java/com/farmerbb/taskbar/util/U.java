@@ -1216,6 +1216,11 @@ public class U {
         SharedPreferences pref = getSharedPreferences(context);
         float baseTaskbarSize = context.getResources().getDimension(R.dimen.tb_base_size_start_plus_divider);
 
+        // That dimension covers the start menu button plus the divider; when the button is hidden
+        // its space belongs to the app list instead
+        if(!pref.getBoolean(PREF_SHOW_START_MENU_ICON, true))
+            baseTaskbarSize -= context.getResources().getDimension(R.dimen.tb_icon_size);
+
         baseTaskbarSize += pref.getBoolean(PREF_ALT_BUTTON_CONFIG, false)
                 ? context.getResources().getDimension(R.dimen.tb_base_size_collapse_button) : 0;
 

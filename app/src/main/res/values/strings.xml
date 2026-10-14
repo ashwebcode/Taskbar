@@ -85,6 +85,8 @@
     <string name="tb_pref_about_description_alt">Taskbar: PC-style productivity for Android\n\n&#169; %1$d Braden Farmer\nApp logo by Mark Morilla</string>
 
     <string name="tb_pref_title_hide_taskbar">Collapse Taskbar when selecting items</string>
+    <string name="tb_pref_title_show_start_menu_icon">Display start menu</string>
+    <string name="tb_pref_description_show_start_menu_icon">Show the start menu button on the taskbar. While it is hidden, the start menu can still be opened with a keyboard shortcut (requires Taskbar to be set as the assist app).</string>
 
     <string name="tb_pref_title_launcher">Replace home screen</string>
     <string name="tb_pref_description_launcher">Use Taskbar as a home screen replacement</string>
