@@ -286,6 +286,7 @@ public class TaskbarController extends UIController {
                                 | WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM, context),
                 getBottomMarginWithOffset(context)
         );
+        params.layoutsOverNavbar = isVerticalOffsetActive(context);
 
         // Determine where to show the taskbar on screen
         String taskbarPosition = TaskbarPosition.getTaskbarPosition(context);

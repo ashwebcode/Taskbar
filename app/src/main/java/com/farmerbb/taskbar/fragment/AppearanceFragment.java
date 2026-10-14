@@ -83,7 +83,14 @@ public class AppearanceFragment extends SettingsFragment {
         findPreference(PREF_BACKGROUND_TINT_PREF).setSummary("#" + String.format("%08x", U.getBackgroundTint(getActivity())).toUpperCase());
         findPreference(PREF_ACCENT_COLOR_PREF).setSummary("#" + String.format("%08x", U.getAccentColor(getActivity())).toUpperCase());
         findPreference(PREF_TASKBAR_SIZE).setSummary(getTaskbarSizeSummary());
-        findPreference(PREF_TASKBAR_VERTICAL_OFFSET).setSummary(getTaskbarVerticalOffsetSummary());
+
+        Preference verticalOffsetPref = findPreference(PREF_TASKBAR_VERTICAL_OFFSET);
+        if(U.isLayoutOverNavbarSupported())
+            verticalOffsetPref.setSummary(getTaskbarVerticalOffsetSummary());
+        else {
+            verticalOffsetPref.setEnabled(false);
+            verticalOffsetPref.setSummary(R.string.tb_taskbar_offset_unsupported);
+        }
     }
 
     @Override

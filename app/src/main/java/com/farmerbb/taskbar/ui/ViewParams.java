@@ -29,6 +29,14 @@ public class ViewParams {
     public int flags;
     public int bottomMargin;
 
+    /**
+     * Whether this window should be laid out against the bottom of the screen instead of being
+     * inset by the navigation bar.  Set for the windows a vertical offset pushes downwards, so
+     * that a bottom margin of zero means the bottom of the screen rather than the top of the
+     * navigation bar.
+     */
+    public boolean layoutsOverNavbar;
+
     public ViewParams(int width, int height, int gravity, int flags, int bottomMargin) {
         this.width = width;
         this.height = height;
@@ -52,6 +60,9 @@ public class ViewParams {
         if(bottomMargin > -1)
             wmParams.y = bottomMargin;
 
+        if(layoutsOverNavbar)
+            U.stopFittingBottomSystemBarInset(wmParams);
+
         U.allowReflection();
         try {
             Class<?> layoutParamsClass = Class.forName("android.view.WindowManager$LayoutParams");
@@ -69,15 +80,22 @@ public class ViewParams {
         return wmParams;
     }
 
+    private ViewParams copy(int width, int height, int bottomMargin) {
+        ViewParams copy = new ViewParams(width, height, gravity, flags, bottomMargin);
+        copy.layoutsOverNavbar = layoutsOverNavbar;
+
+        return copy;
+    }
+
     public ViewParams updateWidth(int width) {
-        return new ViewParams(width, height, gravity, flags, bottomMargin);
+        return copy(width, height, bottomMargin);
     }
 
     public ViewParams updateHeight(int height) {
-        return new ViewParams(width, height, gravity, flags, bottomMargin);
+        return copy(width, height, bottomMargin);
     }
 
     public ViewParams updateBottomMargin(int bottomMargin) {
-        return new ViewParams(width, height, gravity, flags, bottomMargin);
+        return copy(width, height, bottomMargin);
     }
 }

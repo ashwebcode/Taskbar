@@ -190,6 +190,7 @@ public class StartMenuController extends UIController {
                         context),
                 getBottomMarginWithOffset(context)
         );
+        params.layoutsOverNavbar = isVerticalOffsetActive(context);
 
         // Determine where to show the start menu on screen
         String taskbarPosition = TaskbarPosition.getTaskbarPosition(context);

@@ -985,6 +985,19 @@ class UTest {
     }
 
     @Test
+    fun testStopFittingBottomSystemBarInsetWithRAndAboveVersion() {
+        val layoutParams = WindowManager.LayoutParams()
+        Assert.assertTrue(U.stopFittingBottomSystemBarInset(layoutParams))
+    }
+
+    @Test
+    @Config(sdk = [28])
+    fun testStopFittingBottomSystemBarInsetWithBelowVersion() {
+        val layoutParams = WindowManager.LayoutParams()
+        Assert.assertFalse(U.stopFittingBottomSystemBarInset(layoutParams))
+    }
+
+    @Test
     fun testIsDesktopModeActive() {
         PowerMockito.spy(U::class.java)
         val isDesktopModeSupportedAnswer = BooleanAnswer()

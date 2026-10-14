@@ -34,4 +34,26 @@ class ViewParamsTest {
         generatedParams = params.toWindowManagerParams()
         Assert.assertEquals(0, generatedParams.y.toLong())
     }
+
+    @Test
+    fun testLayoutOverNavbarKeepsTheGivenFlagsAndBottomMargin() {
+        val flags = 1001
+        val bottomMargin = 102
+        val params = ViewParams(0, 0, Gravity.BOTTOM, flags, bottomMargin)
+        params.layoutsOverNavbar = true
+
+        val generatedParams = params.toWindowManagerParams()
+        Assert.assertEquals(flags.toLong(), generatedParams.flags.toLong())
+        Assert.assertEquals(bottomMargin.toLong(), generatedParams.y.toLong())
+    }
+
+    @Test
+    fun testUpdateMethodsKeepLayoutOverNavbar() {
+        val params = ViewParams(0, 0, Gravity.BOTTOM, 0, 10)
+        params.layoutsOverNavbar = true
+
+        Assert.assertTrue(params.updateWidth(5).layoutsOverNavbar)
+        Assert.assertTrue(params.updateHeight(5).layoutsOverNavbar)
+        Assert.assertTrue(params.updateBottomMargin(5).layoutsOverNavbar)
+    }
 }

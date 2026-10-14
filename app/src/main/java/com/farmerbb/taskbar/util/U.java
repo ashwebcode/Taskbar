@@ -68,6 +68,7 @@ import androidx.appcompat.view.ContextThemeWrapper;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -808,8 +809,32 @@ public class U {
         return Math.min(offset, getNavbarHeight(context));
     }
 
+    /**
+     * Whether the window manager on this device lets a window opt out of fitting the bottom
+     * system bar inset.  The vertical offset depends on it, because a window that fits the
+     * navigation bar is laid out above it and cannot be moved any lower.
+     */
+    public static boolean isLayoutOverNavbarSupported() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+    }
+
+    /**
+     * Stops the window manager from insetting the given window for the navigation bar, so that
+     * gravity and the bottom margin are resolved against the bottom of the screen instead of the
+     * top of the navigation bar.  Without this, a positive bottom margin moves the window up.
+     */
+    public static boolean stopFittingBottomSystemBarInset(WindowManager.LayoutParams params) {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            params.setFitInsetsSides(
+                    WindowInsets.Side.LEFT | WindowInsets.Side.TOP | WindowInsets.Side.RIGHT);
+            return true;
+        }
+
+        return false;
+    }
+
     public static boolean isTaskbarVerticalOffsetEnabled(Context context) {
-        return getTaskbarVerticalOffset(context) > 0;
+        return isLayoutOverNavbarSupported() && getTaskbarVerticalOffset(context) > 0;
     }
 
     private static int getSystemDimen(Context context, String id) {

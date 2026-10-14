@@ -287,6 +287,7 @@
     <string name="tb_pref_title_taskbar_vertical_offset">Move taskbar lower</string>
     <string name="tb_taskbar_offset_default">Default position</string>
     <string name="tb_taskbar_offset_dp">%1$d dp lower</string>
+    <string name="tb_taskbar_offset_unsupported">Not supported on this Android version</string>
     <string name="tb_reset_colors">Reset colors to default</string>
 
     <string name="tb_visual_feedback">Visual feedback when selecting icons</string>

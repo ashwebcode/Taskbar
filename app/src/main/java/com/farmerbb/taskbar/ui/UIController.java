@@ -85,12 +85,21 @@ public abstract class UIController {
     }
 
     /**
-     * Adds the layout flags a window needs in order to be drawn over the strip of the screen
-     * that the system navigation bar reserves for itself, which is what allows the taskbar to
-     * be lowered into that space.
+     * Whether the windows anchored to the bottom of the screen are currently being lowered into
+     * the space the navigation bar reserves for itself.
+     */
+    protected boolean isVerticalOffsetActive(Context context) {
+        return getVerticalOffset(context) > 0;
+    }
+
+    /**
+     * Adds the layout flags a window needs in order to be drawn down to the bottom edge of the
+     * screen.  These alone do not move a window into the navigation bar's space; the window also
+     * has to stop fitting the bottom system bar inset, which is what {@link
+     * ViewParams#layoutsOverNavbar} does.
      */
     protected int applyVerticalOffsetFlags(int flags, Context context) {
-        if(getVerticalOffset(context) <= 0)
+        if(!isVerticalOffsetActive(context))
             return flags;
 
         return flags
@@ -101,7 +110,8 @@ public abstract class UIController {
     /**
      * The bottom margin to use for a window anchored to the bottom of the screen.  Once a
      * vertical offset is set, the window is laid out against the bottom of the screen itself, so
-     * the offset is measured from there rather than from the top of the navigation bar.
+     * the offset is measured from there rather than from the top of the navigation bar.  The
+     * window also has to be flagged with {@link ViewParams#layoutsOverNavbar} for that to hold.
      */
     protected int getBottomMarginWithOffset(Context context) {
         int offset = getVerticalOffset(context);
@@ -120,7 +130,14 @@ public abstract class UIController {
             if(isImeVisible != prevImeVisibility) {
                 prevImeVisibility = isImeVisible;
 
-                ViewParams newParams = isImeVisible ? params.updateBottomMargin(0) : params;
+                ViewParams newParams = params;
+                if(isImeVisible) {
+                    // Fit the navigation bar again while the keyboard is up, so that the taskbar
+                    // is laid out above it rather than behind it
+                    newParams = params.updateBottomMargin(0);
+                    newParams.layoutsOverNavbar = false;
+                }
+
                 host.updateViewLayout(layout, newParams);
 
                 if(isImeFixDisabled() && !U.isLibrary(context)) {
