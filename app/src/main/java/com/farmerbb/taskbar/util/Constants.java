@@ -197,6 +197,7 @@ public class Constants {
     public static final String PREF_SHOW_BACKGROUND = "show_background";
     public static final String PREF_SHOW_FREEFORM_DISABLED_MESSAGE = "show_freeform_disabled_message";
     public static final String PREF_SHOW_SEARCH_BAR = "show_search_bar";
+    public static final String PREF_SHOW_START_MENU_ICON = "show_start_menu_icon";
     public static final String PREF_SHOW_WINDOW_SIZES = "show_window_sizes";
     public static final String PREF_SKIP_AUTO_HIDE_NAVBAR = "skip_auto_hide_navbar";
     public static final String PREF_SKIP_DISABLE_FREEFORM_RECEIVER = "skip_disable_freeform_receiver";

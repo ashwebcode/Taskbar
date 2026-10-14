@@ -58,6 +58,12 @@
         android:title="@string/tb_pref_title_hide_taskbar"/>
 
     <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="show_start_menu_icon"
+        android:title="@string/tb_pref_title_show_start_menu_icon"
+        android:summary="@string/tb_pref_description_show_start_menu_icon"/>
+
+    <CheckBoxPreference
         android:defaultValue="false"
         android:key="hide_when_keyboard_shown"
         android:title="@string/tb_pref_title_hide_when_keyboard_shown"

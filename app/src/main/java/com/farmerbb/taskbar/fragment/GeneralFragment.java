@@ -62,6 +62,7 @@ public class GeneralFragment extends SettingsFragment {
         bindPreferenceSummaryToValue(findPreference(PREF_ANCHOR));
         bindPreferenceSummaryToValue(findPreference(PREF_ALT_BUTTON_CONFIG));
         bindPreferenceSummaryToValue(findPreference(PREF_SHOW_SEARCH_BAR));
+        bindPreferenceSummaryToValue(findPreference(PREF_SHOW_START_MENU_ICON));
         bindPreferenceSummaryToValue(findPreference(PREF_HIDE_WHEN_KEYBOARD_SHOWN));
 
         if(U.isChromeOs(getActivity()) && U.getCurrentApiVersion() < 30.0f)

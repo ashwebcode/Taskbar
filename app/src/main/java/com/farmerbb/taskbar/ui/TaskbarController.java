@@ -115,6 +115,8 @@ public class TaskbarController extends UIController {
 
     private LinearLayout layout;
     private ImageView startButton;
+    private boolean showStartMenuButton = true;
+    private boolean taskbarVisible = true;
     private LinearLayout taskbar;
     private FrameLayout scrollView;
     private Button button;
@@ -213,7 +215,7 @@ public class TaskbarController extends UIController {
             } else if(Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
                 screenOff = false;
 
-                if(startButton != null && startButton.getVisibility() == View.VISIBLE) {
+                if(taskbarVisible) {
                     shouldRefreshRecents = true;
                     resumeRefreshingRecents();
                 }
@@ -226,7 +228,7 @@ public class TaskbarController extends UIController {
     private final BroadcastReceiver startMenuAppearReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(startButton.getVisibility() == View.GONE
+            if(!taskbarVisible
                     && (!LauncherHelper.getInstance().isOnHomeScreen(context) || FreeformHackHelper.getInstance().isInFreeformWorkspace()))
                 layout.setVisibility(View.GONE);
         }
@@ -235,7 +237,7 @@ public class TaskbarController extends UIController {
     private final BroadcastReceiver startMenuDisappearReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(startButton.getVisibility() == View.GONE)
+            if(!taskbarVisible)
                 layout.setVisibility(View.VISIBLE);
         }
     };
@@ -313,6 +315,11 @@ public class TaskbarController extends UIController {
 
         startButton = layout.findViewById(R.id.start_button);
         drawStartButton(taskbarContext, startButton, pref);
+
+        // The start menu button is optional, and when it is hidden the space it occupied goes back
+        // to the app list rather than being left as a gap
+        showStartMenuButton = pref.getBoolean(PREF_SHOW_START_MENU_ICON, true);
+        if(!showStartMenuButton) startButton.setVisibility(View.GONE);
 
         refreshInterval = (int) (Float.parseFloat(pref.getString(PREF_REFRESH_FREQUENCY, "1")) * 1000);
         if(refreshInterval == 0)
@@ -1404,7 +1411,7 @@ public class TaskbarController extends UIController {
             }
         }
 
-        if(startButton.getVisibility() == View.GONE)
+        if(!taskbarVisible)
             showTaskbar(true);
         else
             hideTaskbar(true);
@@ -1416,8 +1423,10 @@ public class TaskbarController extends UIController {
             taskbarHiddenTemporarily = false;
         }
 
-        if(startButton.getVisibility() == View.GONE) {
-            startButton.setVisibility(View.VISIBLE);
+        if(!taskbarVisible) {
+            taskbarVisible = true;
+
+            startButton.setVisibility(showStartMenuButton ? View.VISIBLE : View.GONE);
             space.setVisibility(View.VISIBLE);
 
             if(dashboardEnabled)
@@ -1450,7 +1459,9 @@ public class TaskbarController extends UIController {
             taskbarHiddenTemporarily = false;
         }
 
-        if(startButton.getVisibility() == View.VISIBLE) {
+        if(taskbarVisible) {
+            taskbarVisible = false;
+
             startButton.setVisibility(View.GONE);
             space.setVisibility(View.GONE);
 
