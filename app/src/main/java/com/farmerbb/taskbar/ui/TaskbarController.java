@@ -141,7 +141,7 @@ public class TaskbarController extends UIController {
     private boolean shouldRefreshRecents = true;
     private boolean taskbarShownTemporarily = false;
     private boolean taskbarHiddenTemporarily = false;
-    private boolean isRefreshingRecents = false;
+    private volatile int recentsGeneration = 0;
     private boolean isFirstStart = true;
 
     private int refreshInterval = -1;
@@ -215,7 +215,7 @@ public class TaskbarController extends UIController {
 
                 if(startButton != null && startButton.getVisibility() == View.VISIBLE) {
                     shouldRefreshRecents = true;
-                    startRefreshingRecents();
+                    resumeRefreshingRecents();
                 }
 
                 setupImeDetection();
@@ -788,49 +788,86 @@ public class TaskbarController extends UIController {
     }
 
     private void startRefreshingRecents() {
+        startRefreshingRecents(true);
+    }
+
+    /**
+     * Refreshes the recents list without discarding what the taskbar is already showing. Used
+     * whenever the taskbar becomes visible again - after the screen comes back on, or when it is
+     * expanded - where the initial load's clearing first pass would blank the taskbar until the
+     * next refresh, which in manual mode only happens when the refresh button is pressed.
+     */
+    private void resumeRefreshingRecents() {
+        startRefreshingRecents(false);
+    }
+
+    /**
+     * @param initialLoad true when the taskbar's views have just been (re)created, so the current
+     *                    contents are discarded and the first refresh is treated as the initial one
+     */
+    private void startRefreshingRecents(boolean initialLoad) {
         if(thread != null) thread.interrupt();
 
         final boolean onlyRefreshManually = U.isOnlyRefreshManuallyEnabled(context);
 
-        currentTaskbarIds.clear();
+        if(initialLoad) currentTaskbarIds.clear();
+
+        // A thread from an earlier restart may still be winding down, so the generation counter
+        // decides which one is still allowed to refresh
+        final int generation = ++recentsGeneration;
 
         handler = U.newHandler();
         thread = new Thread(() -> {
-            updateRecentApps(true);
+            // A newer restart has superseded this one, so there is no pass left to do
+            if(generation != recentsGeneration) return;
+
+            if(initialLoad)
+                updateRecentApps(true);
+            else
+                updateRecentApps(false, false);
 
             // In manual mode the list is only ever rebuilt on demand from the refresh button, and
             // the system tray is hidden, so there is nothing left for this thread to poll for.
-            if(!isRefreshingRecents && !onlyRefreshManually) {
-                isRefreshingRecents = true;
-
+            if(!onlyRefreshManually) {
                 // The taskbar can be created while the screen is already off, in which case the
                 // screen-on broadcast brings the loop back.
-                while(shouldRefreshRecents && !screenOff) {
+                while(shouldRefreshRecents && !screenOff && generation == recentsGeneration) {
                     updateRecentApps(false);
                     SystemClock.sleep(refreshInterval);
                 }
-
-                isRefreshingRecents = false;
             }
         });
 
         thread.start();
     }
 
+    private void updateRecentApps(final boolean firstRefresh) {
+        updateRecentApps(firstRefresh, true);
+    }
+
+    /**
+     * @param showToast show the "Refreshing Taskbar" toast for a non-initial refresh; catching up
+     *                  after the screen comes back on is done quietly
+     */
     @SuppressWarnings("Convert2streamapi")
     @TargetApi(Build.VERSION_CODES.LOLLIPOP_MR1)
-    private void updateRecentApps(final boolean firstRefresh) {
+    private void updateRecentApps(final boolean firstRefresh, final boolean showToast) {
         if(isScreenOff()) return;
 
         updateSystemTray();
         // Show a short toast when a non-initial refresh is occurring
-        if(!firstRefresh) handler.post(() -> U.showToast(context, R.string.tb_refreshing_taskbar));
+        if(!firstRefresh && showToast)
+            handler.post(() -> U.showToast(context, R.string.tb_refreshing_taskbar));
 
         SharedPreferences pref = U.getSharedPreferences(context);
         final PackageManager pm = context.getPackageManager();
         final List<AppEntry> entries = new ArrayList<>();
         List<LauncherActivityInfo> launcherAppCache = new ArrayList<>();
-        int maxNumOfEntries = firstRefresh ? 0 : U.getMaxNumOfEntries(context);
+        // The initial refresh on a device that polls builds the taskbar in two passes: this cheap
+        // one clears it, and the refresh loop fills it back in. There is no loop to do that when
+        // refreshing manually, so the list has to be built here instead of left empty.
+        boolean cheapFirstPass = firstRefresh && !U.isOnlyRefreshManuallyEnabled(context);
+        int maxNumOfEntries = cheapFirstPass ? 0 : U.getMaxNumOfEntries(context);
         boolean fullLength = pref.getBoolean(PREF_FULL_LENGTH, true);
 
         PinnedBlockedApps pba = PinnedBlockedApps.getInstance(context);
@@ -997,13 +1034,17 @@ public class TaskbarController extends UIController {
 
                         isShowingRecents = true;
                         if(shouldRefreshRecents && scrollView.getVisibility() != View.VISIBLE) {
-                            if(firstRefresh)
+                            // Only the cheap first pass holds the strip back, since the refresh loop
+                            // is about to fill it in and show it; a complete pass has the list
+                            // ready now, and in manual mode nothing else would ever show it
+                            if(cheapFirstPass)
                                 scrollView.setVisibility(View.INVISIBLE);
                             else
                                 scrollView.setVisibility(View.VISIBLE);
                         }
 
-                        if(firstRefresh && scrollView.getVisibility() != View.VISIBLE) {
+                        // Establishes the initial scroll offset on the taskbar's first draw
+                        if(firstRefresh) {
                             U.newHandler().post(
                                     () -> scrollTaskbar(
                                             scrollView,
@@ -1392,7 +1433,7 @@ public class TaskbarController extends UIController {
                 sysTrayParentLayout.setVisibility(View.VISIBLE);
 
             shouldRefreshRecents = true;
-            startRefreshingRecents();
+            resumeRefreshingRecents();
 
             SharedPreferences pref = U.getSharedPreferences(context);
             pref.edit().putBoolean(PREF_COLLAPSED, true).apply();
@@ -1426,6 +1467,7 @@ public class TaskbarController extends UIController {
                 sysTrayParentLayout.setVisibility(View.GONE);
 
             shouldRefreshRecents = false;
+            recentsGeneration++;
             if(thread != null) thread.interrupt();
 
             SharedPreferences pref = U.getSharedPreferences(context);
@@ -1575,6 +1617,7 @@ public class TaskbarController extends UIController {
     @Override
     public void onDestroyHost(UIHost host) {
         shouldRefreshRecents = false;
+        recentsGeneration++;
 
         if(layout != null)
             try {
