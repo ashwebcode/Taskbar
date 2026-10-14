@@ -25,6 +25,12 @@
         android:key="refresh_frequency"
         android:title="@string/tb_pref_title_recents_refresh_interval"/>
 
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="only_refresh_manually"
+        android:title="@string/tb_pref_title_only_refresh_manually"
+        android:summary="@string/tb_pref_description_only_refresh_manually"/>
+
     <ListPreference
         android:defaultValue="past_day"
         android:entries="@array/tb_pref_recents_amount"

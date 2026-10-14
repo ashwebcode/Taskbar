@@ -41,6 +41,9 @@ import static com.farmerbb.taskbar.util.Constants.*;
 
 public class RecentAppsFragment extends SettingsFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 
+    // Each step of the refresh frequency slider represents 1/10th of the old increment (0.05s).
+    private static final double REFRESH_FREQUENCY_STEP = 0.05;
+
     @Override
     protected void addPrefsToSanitize() {
         prefsToSanitize.put(PREF_SYS_TRAY, R.bool.class);
@@ -55,6 +58,7 @@ public class RecentAppsFragment extends SettingsFragment implements SharedPrefer
         findPreference(PREF_ENABLE_RECENTS).setOnPreferenceClickListener(this);
         findPreference(PREF_MAX_NUM_OF_RECENTS).setOnPreferenceClickListener(this);
         findPreference(PREF_REFRESH_FREQUENCY).setOnPreferenceClickListener(this);
+        findPreference(PREF_ONLY_REFRESH_MANUALLY).setOnPreferenceClickListener(this);
 
         if(showRunningAppsOnly()) {
             ListPreference recentsAmountPref = ((ListPreference) findPreference(PREF_RECENTS_AMOUNT));
@@ -186,7 +190,7 @@ public class RecentAppsFragment extends SettingsFragment implements SharedPrefer
                         if(progress == 0)
                             textView2.setText(R.string.tb_infinity);
                         else
-                            textView2.setText(Double.toString(progress * 0.5));
+                            textView2.setText(formatRefreshFrequency(progress * REFRESH_FREQUENCY_STEP));
                     }
 
                     @Override
@@ -196,7 +200,7 @@ public class RecentAppsFragment extends SettingsFragment implements SharedPrefer
                     public void onStopTrackingTouch(SeekBar seekBar) {}
                 });
 
-                seekBar2.setProgress((int) (Double.parseDouble(value2) * 2));
+                seekBar2.setProgress(getProgressForRefreshFrequency(Double.parseDouble(value2)));
 
                 TextView blurb2 = dialogLayout2.findViewById(R.id.blurb);
                 blurb2.setText(R.string.tb_refresh_frequency_blurb);
@@ -204,9 +208,9 @@ public class RecentAppsFragment extends SettingsFragment implements SharedPrefer
                 builder2.setView(dialogLayout2)
                         .setTitle(R.string.tb_pref_title_recents_refresh_interval)
                         .setPositiveButton(R.string.tb_action_ok, (dialog2, id) -> {
-                            double progress = seekBar2.getProgress() * 0.5;
+                            double progress = seekBar2.getProgress() * REFRESH_FREQUENCY_STEP;
 
-                            pref.edit().putString(PREF_REFRESH_FREQUENCY, Double.toString(progress)).apply();
+                            pref.edit().putString(PREF_REFRESH_FREQUENCY, formatRefreshFrequency(progress)).apply();
                             U.showToast(getActivity(), R.string.tb_refreshing_taskbar);
                             updateRefreshFrequency(true);
                         })
@@ -214,6 +218,9 @@ public class RecentAppsFragment extends SettingsFragment implements SharedPrefer
 
                 AlertDialog dialog2 = builder2.create();
                 dialog2.show();
+                break;
+            case PREF_ONLY_REFRESH_MANUALLY:
+                updateRefreshFrequency(true);
                 break;
             case PREF_NOTIFICATION_COUNT:
                 try {
@@ -248,20 +255,57 @@ public class RecentAppsFragment extends SettingsFragment implements SharedPrefer
 
     private void updateRefreshFrequency(boolean restartTaskbar) {
         SharedPreferences pref = U.getSharedPreferences(getActivity());
-        String value = pref.getString(PREF_REFRESH_FREQUENCY, "1");
-        double doubleValue = Double.parseDouble(value);
-        int intValue = (int) doubleValue;
+        Preference refreshFrequencyPref = findPreference(PREF_REFRESH_FREQUENCY);
+        boolean onlyRefreshManually = pref.getBoolean(PREF_ONLY_REFRESH_MANUALLY, false);
 
-        if(doubleValue == 0)
-            findPreference(PREF_REFRESH_FREQUENCY).setSummary(R.string.tb_refresh_frequency_continuous);
-        else if(doubleValue == 1)
-            findPreference(PREF_REFRESH_FREQUENCY).setSummary(R.string.tb_refresh_frequency_singular);
-        else if(doubleValue == (double) intValue)
-            findPreference(PREF_REFRESH_FREQUENCY).setSummary(getString(R.string.tb_refresh_frequency, Integer.toString(intValue)));
-        else
-            findPreference(PREF_REFRESH_FREQUENCY).setSummary(getString(R.string.tb_refresh_frequency, value));
+        if(onlyRefreshManually) {
+            refreshFrequencyPref.setSummary(R.string.tb_refresh_frequency_manual);
+            refreshFrequencyPref.setEnabled(false);
+        } else {
+            String value = pref.getString(PREF_REFRESH_FREQUENCY, "1");
+            double doubleValue = Double.parseDouble(value);
+            int intValue = (int) doubleValue;
+
+            if(doubleValue == 0)
+                refreshFrequencyPref.setSummary(R.string.tb_refresh_frequency_continuous);
+            else if(doubleValue == 1)
+                refreshFrequencyPref.setSummary(R.string.tb_refresh_frequency_singular);
+            else if(doubleValue == (double) intValue)
+                refreshFrequencyPref.setSummary(getString(R.string.tb_refresh_frequency, Integer.toString(intValue)));
+            else
+                refreshFrequencyPref.setSummary(getString(R.string.tb_refresh_frequency, formatRefreshFrequency(doubleValue)));
+
+            refreshFrequencyPref.setEnabled(true);
+        }
+
+        // The system tray is hidden while refreshing manually, since nothing would keep it - or
+        // its clock - current without a schedule to ride on.
+        Preference sysTrayPref = findPreference(PREF_SYS_TRAY);
+        if(sysTrayPref != null) {
+            sysTrayPref.setEnabled(!onlyRefreshManually);
+            sysTrayPref.setSummary(onlyRefreshManually
+                    ? R.string.tb_pref_sys_tray_manual
+                    : R.string.tb_pref_description_sys_tray);
+        }
 
         if(restartTaskbar) U.restartTaskbar(getActivity());
+    }
+
+    /**
+     * Formats a refresh frequency (in seconds) without trailing floating point noise,
+     * e.g. 0.05 stays "0.05" instead of "0.05000000000000001".
+     */
+    private static String formatRefreshFrequency(double seconds) {
+        int hundredths = (int) Math.round(seconds * 100);
+
+        if(hundredths % 100 == 0)
+            return Integer.toString(hundredths / 100);
+
+        return Double.toString(hundredths / 100.0);
+    }
+
+    private static int getProgressForRefreshFrequency(double seconds) {
+        return (int) Math.round(seconds / REFRESH_FREQUENCY_STEP);
     }
 
     @Override

@@ -1884,10 +1884,17 @@ public class U {
     public static boolean isSystemTrayEnabled(Context context) {
         SharedPreferences pref = getSharedPreferences(context);
 
+        // The system tray is hidden while the taskbar is only refreshed manually, since nothing
+        // keeps it - or its clock - current without a schedule to ride on.
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                && !isOnlyRefreshManuallyEnabled(context)
                 && getBooleanPrefWithDefault(context, PREF_SYS_TRAY)
                 && pref.getBoolean(PREF_FULL_LENGTH, true)
                 && !TaskbarPosition.isVertical(context);
+    }
+
+    public static boolean isOnlyRefreshManuallyEnabled(Context context) {
+        return getSharedPreferences(context).getBoolean(PREF_ONLY_REFRESH_MANUALLY, false);
     }
 
     public static boolean isLibrary(Context context) {
