@@ -32,7 +32,7 @@
         android:summary="@string/tb_pref_description_only_refresh_manually"/>
 
     <ListPreference
-        android:defaultValue="past_day"
+        android:defaultValue="app_start"
         android:entries="@array/tb_pref_recents_amount"
         android:entryValues="@array/tb_pref_recents_amount_values"
         android:key="recents_amount"
@@ -60,7 +60,7 @@
         android:summary="@string/tb_pref_summary_hide_foreground"/>
 
     <CheckBoxPreference
-        android:defaultValue="false"
+        android:defaultValue="true"
         android:key="disable_animations"
         android:title="@string/tb_pref_disable_animations"/>
 

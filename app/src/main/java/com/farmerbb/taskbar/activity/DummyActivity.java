@@ -82,7 +82,7 @@ public class DummyActivity extends Activity {
                             Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
 
                             SharedPreferences pref = U.getSharedPreferences(this);
-                            if(pref.getBoolean(PREF_DISABLE_ANIMATIONS, false))
+                            if(pref.getBoolean(PREF_DISABLE_ANIMATIONS, true))
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
 
                             U.launchApp(this, () -> {

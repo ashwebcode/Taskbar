@@ -779,7 +779,7 @@ public class ContextMenuActivity extends PreferenceActivity implements Preferenc
         SharedPreferences pref = U.getSharedPreferences(this);
 
         super.finish();
-        if(showStartMenu || pref.getBoolean(PREF_DISABLE_ANIMATIONS, false))
+        if(showStartMenu || pref.getBoolean(PREF_DISABLE_ANIMATIONS, true))
             overridePendingTransition(0, 0);
     }
 

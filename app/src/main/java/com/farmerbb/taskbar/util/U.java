@@ -389,7 +389,7 @@ public class U {
                 && helper.isInFreeformWorkspace()
                 && MenuHelper.getInstance().isContextMenuOpen();
 
-        boolean noAnimation = pref.getBoolean(PREF_DISABLE_ANIMATIONS, false);
+        boolean noAnimation = pref.getBoolean(PREF_DISABLE_ANIMATIONS, true);
         boolean isAndroidR = getCurrentApiVersion() > 29.0;
 
         if(hasFreeformSupport(context)
@@ -452,7 +452,7 @@ public class U {
                 && Build.VERSION.SDK_INT <= Build.VERSION_CODES.N_MR1)
             intent.addFlags(Intent.FLAG_ACTIVITY_TASK_ON_HOME);
 
-        if(pref.getBoolean(PREF_DISABLE_ANIMATIONS, false))
+        if(pref.getBoolean(PREF_DISABLE_ANIMATIONS, true))
             intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
 
         boolean realOpenInNewWindow = openInNewWindow || pref.getBoolean(PREF_FORCE_NEW_WINDOW, false);
@@ -1371,13 +1371,12 @@ public class U {
     }
 
     public static void initPrefs(Context context) {
-        // Enable freeform hack automatically on supported devices
+        // Freeform mode is off by default; record that this device has been set up, but leave the
+        // freeform hack itself alone so the user has to opt in to it
         SharedPreferences pref = getSharedPreferences(context);
         if(canEnableFreeform(context)) {
             if(!pref.getBoolean(PREF_FREEFORM_HACK_OVERRIDE, false)) {
                 pref.edit()
-                        .putBoolean(PREF_FREEFORM_HACK, hasFreeformSupport(context) && !isSamsungDevice())
-                        .putBoolean(PREF_SAVE_WINDOW_SIZES, false)
                         .putBoolean(PREF_FREEFORM_HACK_OVERRIDE, true)
                         .apply();
             } else if(!hasFreeformSupport(context)) {
@@ -1533,7 +1532,7 @@ public class U {
 
     public static boolean shouldCollapse(Context context, boolean pendingAppLaunch) {
         SharedPreferences pref = getSharedPreferences(context);
-        if(pref.getBoolean(PREF_HIDE_TASKBAR, true)) {
+        if(pref.getBoolean(PREF_HIDE_TASKBAR, false)) {
             if(!isFreeformModeEnabled(context)
                     || isOverridingFreeformHack(context, false))
                 return !LauncherHelper.getInstance().isOnHomeScreen(context);
