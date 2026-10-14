@@ -1346,6 +1346,12 @@ public class U {
         if(!pref.getBoolean(PREF_SHOW_START_MENU_ICON, true))
             baseTaskbarSize -= context.getResources().getDimension(R.dimen.tb_icon_size);
 
+        // The refresh button is only shown while refreshing manually, but it takes up as much
+        // room as an icon when it is.  Leaving it out makes the taskbar wider than the screen,
+        // which pushes the collapse button off the far edge.
+        if(isOnlyRefreshManuallyEnabled(context))
+            baseTaskbarSize += context.getResources().getDimension(R.dimen.tb_icon_size);
+
         baseTaskbarSize += pref.getBoolean(PREF_ALT_BUTTON_CONFIG, false)
                 ? context.getResources().getDimension(R.dimen.tb_base_size_collapse_button) : 0;
 

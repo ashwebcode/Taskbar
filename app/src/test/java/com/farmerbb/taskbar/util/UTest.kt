@@ -568,6 +568,14 @@ class UTest {
         Assert.assertEquals(initialSize + systemTraySize - iconSize,
                 U.getBaseTaskbarSize(context), 0f)
         prefs.edit().remove(Constants.PREF_SHOW_START_MENU_ICON).apply()
+        // The refresh button takes up an icon's worth of space while refreshing manually
+        prefs.edit().putBoolean(Constants.PREF_ONLY_REFRESH_MANUALLY, true).apply()
+        Assert.assertEquals(initialSize + systemTraySize + iconSize,
+                U.getBaseTaskbarSize(context), 0f)
+        // ...and none at all otherwise, since the button is hidden then
+        prefs.edit().remove(Constants.PREF_ONLY_REFRESH_MANUALLY).apply()
+        Assert.assertEquals(initialSize + systemTraySize,
+                U.getBaseTaskbarSize(context), 0f)
     }
 
     @Test
