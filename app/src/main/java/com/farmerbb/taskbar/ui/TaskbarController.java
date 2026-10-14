@@ -96,17 +96,22 @@ import com.farmerbb.taskbar.activity.InvisibleActivityFreeform;
 import com.farmerbb.taskbar.activity.SecondaryHomeActivity;
 import com.farmerbb.taskbar.util.TaskbarPosition;
 import com.farmerbb.taskbar.util.AppEntry;
+import com.farmerbb.taskbar.util.CompatUtils;
 import com.farmerbb.taskbar.util.DisplayInfo;
 import com.farmerbb.taskbar.helper.FreeformHackHelper;
 import com.farmerbb.taskbar.util.IconCache;
 import com.farmerbb.taskbar.helper.LauncherHelper;
-import com.farmerbb.taskbar.util.PinnedBlockedApps;
 import com.farmerbb.taskbar.helper.MenuHelper;
+import com.farmerbb.taskbar.util.PinnedBlockedApps;
 import com.farmerbb.taskbar.util.U;
 
 import static com.farmerbb.taskbar.util.Constants.*;
 
 public class TaskbarController extends UIController {
+
+    // Fallback cadence for the on-screen keyboard watcher, used only on releases where the
+    // IME's visibility cannot be read from window insets (see setupImeDetection()).
+    private static final int IME_WATCH_INTERVAL = 500;
 
     private LinearLayout layout;
     private ImageView startButton;
@@ -124,9 +129,13 @@ public class TaskbarController extends UIController {
     private TextView notificationCountText;
 
     private Handler handler;
-    private Handler handler2;
     private Thread thread;
-    private Thread thread2;
+
+    private Handler imeHandler;
+    private Thread imeThread;
+    private volatile int imeWatcherGeneration = 0;
+    private boolean prevImeVisible = false;
+    private boolean screenOff = false;
 
     private boolean isShowingRecents = true;
     private boolean shouldRefreshRecents = true;
@@ -135,16 +144,12 @@ public class TaskbarController extends UIController {
     private boolean isRefreshingRecents = false;
     private boolean isFirstStart = true;
 
-    private boolean startThread2 = false;
-    private boolean stopThread2 = false;
-
     private int refreshInterval = -1;
     private long searchInterval = -1;
     private String sortOrder = "false";
     private boolean runningAppsOnly = false;
 
     private int currentTaskbarPosition = 0;
-    private boolean showHideAutomagically = false;
     private boolean positionIsVertical = false;
     private boolean dashboardEnabled = false;
     private boolean navbarButtonsEnabled = false;
@@ -190,7 +195,31 @@ public class TaskbarController extends UIController {
     private final BroadcastReceiver tempHideReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            tempHideTaskbar(false);
+            tempHideTaskbar();
+        }
+    };
+
+    // There is nothing for the taskbar to do while the screen is off, so the refresh loops are
+    // stopped and only restarted once the device is interactive again.
+    private final BroadcastReceiver screenReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+                screenOff = true;
+                shouldRefreshRecents = false;
+
+                if(thread != null) thread.interrupt();
+                stopImeWatcher();
+            } else if(Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
+                screenOff = false;
+
+                if(startButton != null && startButton.getVisibility() == View.VISIBLE) {
+                    shouldRefreshRecents = true;
+                    startRefreshingRecents();
+                }
+
+                setupImeDetection();
+            }
         }
     };
 
@@ -292,7 +321,7 @@ public class TaskbarController extends UIController {
         sortOrder = pref.getString(PREF_SORT_ORDER, "false");
         runningAppsOnly =
                 PREF_RECENTS_AMOUNT_RUNNING_APPS_ONLY
-                        .equals(pref.getString(PREF_RECENTS_AMOUNT, PREF_RECENTS_AMOUNT_PAST_DAY));
+                        .equals(pref.getString(PREF_RECENTS_AMOUNT, PREF_RECENTS_AMOUNT_APP_START));
         searchInterval = getSearchInterval(pref);
 
         U.sendBroadcast(context, ACTION_HIDE_START_MENU);
@@ -332,6 +361,7 @@ public class TaskbarController extends UIController {
             navbarButtons.setVisibility(View.GONE);
 
         if(refreshButton != null) {
+            refreshButton.setVisibility(U.isOnlyRefreshManuallyEnabled(context) ? View.VISIBLE : View.GONE);
             refreshButton.setOnClickListener(v -> updateRecentApps(false));
         }
 
@@ -370,6 +400,18 @@ public class TaskbarController extends UIController {
         U.registerReceiver(context, startMenuAppearReceiver, ACTION_START_MENU_APPEARING);
         U.registerReceiver(context, startMenuDisappearReceiver, ACTION_START_MENU_DISAPPEARING);
 
+        screenOff = isScreenOff();
+
+        // drawTaskbar() can run again on host recreation, so drop any previous registration first
+        try {
+            context.unregisterReceiver(screenReceiver);
+        } catch (IllegalArgumentException ignored) {}
+
+        IntentFilter screenFilter = new IntentFilter();
+        screenFilter.addAction(Intent.ACTION_SCREEN_ON);
+        screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
+        ContextCompat.registerReceiver(context, screenReceiver, screenFilter, ContextCompat.RECEIVER_NOT_EXPORTED);
+
         if(sysTrayEnabled) {
             TelephonyManager manager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
             manager.listen(listener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
@@ -399,6 +441,8 @@ public class TaskbarController extends UIController {
         startRefreshingRecents();
 
         host.addView(layout, params);
+
+        setupImeDetection();
 
         isFirstStart = false;
     }
@@ -644,7 +688,7 @@ public class TaskbarController extends UIController {
     @VisibleForTesting
     long getSearchInterval(SharedPreferences pref) {
         long searchInterval = -1;
-        switch(pref.getString(PREF_RECENTS_AMOUNT, PREF_RECENTS_AMOUNT_PAST_DAY)) {
+        switch(pref.getString(PREF_RECENTS_AMOUNT, PREF_RECENTS_AMOUNT_APP_START)) {
             case PREF_RECENTS_AMOUNT_PAST_DAY:
                 searchInterval = System.currentTimeMillis() - AlarmManager.INTERVAL_DAY;
                 break;
@@ -745,10 +789,8 @@ public class TaskbarController extends UIController {
 
     private void startRefreshingRecents() {
         if(thread != null) thread.interrupt();
-        stopThread2 = true;
 
-        SharedPreferences pref = U.getSharedPreferences(context);
-        showHideAutomagically = pref.getBoolean(PREF_HIDE_WHEN_KEYBOARD_SHOWN, false);
+        final boolean onlyRefreshManually = U.isOnlyRefreshManuallyEnabled(context);
 
         currentTaskbarIds.clear();
 
@@ -756,34 +798,15 @@ public class TaskbarController extends UIController {
         thread = new Thread(() -> {
             updateRecentApps(true);
 
-            if(!isRefreshingRecents) {
+            // In manual mode the list is only ever rebuilt on demand from the refresh button, and
+            // the system tray is hidden, so there is nothing left for this thread to poll for.
+            if(!isRefreshingRecents && !onlyRefreshManually) {
                 isRefreshingRecents = true;
 
-                while(shouldRefreshRecents) {
+                // The taskbar can be created while the screen is already off, in which case the
+                // screen-on broadcast brings the loop back.
+                while(shouldRefreshRecents && !screenOff) {
                     updateRecentApps(false);
-
-                    if(showHideAutomagically && !positionIsVertical && !MenuHelper.getInstance().isStartMenuOpen()) {
-                        handler.post(() -> {
-                            if(layout != null) {
-                                int[] location = new int[2];
-                                layout.getLocationOnScreen(location);
-
-                                if(location[1] != 0) {
-                                    if(location[1] > currentTaskbarPosition) {
-                                        currentTaskbarPosition = location[1];
-                                    } else if(location[1] < currentTaskbarPosition) {
-                                        if(currentTaskbarPosition - location[1] == getNavBarSize())
-                                            currentTaskbarPosition = location[1];
-                                        else if(!startThread2) {
-                                            startThread2 = true;
-                                            tempHideTaskbar(true);
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    }
-
                     SystemClock.sleep(refreshInterval);
                 }
 
@@ -1436,7 +1459,7 @@ public class TaskbarController extends UIController {
             taskbarHiddenTemporarily = false;
     }
 
-    private void tempHideTaskbar(boolean monitorPositionChanges) {
+    private void tempHideTaskbar() {
         if(!taskbarShownTemporarily) {
             SharedPreferences pref = U.getSharedPreferences(context);
             if(pref.getBoolean(PREF_COLLAPSED, false)) taskbarHiddenTemporarily = true;
@@ -1446,52 +1469,95 @@ public class TaskbarController extends UIController {
 
         if(taskbarShownTemporarily)
             taskbarShownTemporarily = false;
-
-        if(monitorPositionChanges && showHideAutomagically && !positionIsVertical) {
-            if(thread2 != null) thread2.interrupt();
-
-            handler2 = U.newHandler();
-            thread2 = new Thread(() -> {
-                stopThread2 = false;
-
-                while(!stopThread2) {
-                    SystemClock.sleep(refreshInterval);
-
-                    handler2.post(() -> stopThread2 = checkPositionChange());
-                }
-
-                startThread2 = false;
-            });
-
-            thread2.start();
-        }
     }
 
-    private boolean checkPositionChange() {
-        if(!isScreenOff() && layout != null) {
-            int[] location = new int[2];
-            layout.getLocationOnScreen(location);
+    /**
+     * Watches for the on-screen keyboard so the taskbar can be temporarily hidden while it is
+     * shown. Only used when the user has enabled "Automatically collapse Taskbar"; the insets
+     * listener is event driven, and the fallback watcher never runs while the screen is off.
+     */
+    private void setupImeDetection() {
+        if(!U.getSharedPreferences(context).getBoolean(PREF_HIDE_WHEN_KEYBOARD_SHOWN, false)
+                || positionIsVertical)
+            return;
 
-            if(location[1] == 0) {
-                return true;
-            } else {
-                if(location[1] > currentTaskbarPosition) {
-                    currentTaskbarPosition = location[1];
-                    if(taskbarHiddenTemporarily) {
-                        tempShowTaskbar();
-                        return true;
-                    }
-                } else if(location[1] == currentTaskbarPosition && taskbarHiddenTemporarily) {
+        if(canDetectImeViaInsets()) {
+            taskbar.setOnApplyWindowInsetsListener((v, insets) -> {
+                if(screenOff) return insets;
+
+                boolean isImeVisible = CompatUtils.isImeVisible(v);
+                if(isImeVisible == prevImeVisible) return insets;
+
+                prevImeVisible = isImeVisible;
+
+                if(isImeVisible)
+                    tempHideTaskbar();
+                else if(taskbarHiddenTemporarily)
                     tempShowTaskbar();
-                    return true;
-                } else if(location[1] < currentTaskbarPosition
-                        && currentTaskbarPosition - location[1] == getNavBarSize()) {
-                    currentTaskbarPosition = location[1];
-                }
-            }
-        }
 
-        return false;
+                return insets;
+            });
+        } else
+            startImeWatcher();
+    }
+
+    /**
+     * True when the IME's visibility can be read from window insets, which is the case from
+     * Android 11 onwards - the same signal {@link CompatUtils#isImeVisible(View)} is built on.
+     * If the taskbar's overlay window turns out not to receive IME insets on some devices,
+     * returning false here falls back to the position watcher for every release.
+     */
+    private boolean canDetectImeViaInsets() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+    }
+
+    private void startImeWatcher() {
+        stopImeWatcher();
+
+        final int generation = ++imeWatcherGeneration;
+        imeHandler = U.newHandler();
+        imeThread = new Thread(() -> {
+            while(generation == imeWatcherGeneration && !screenOff) {
+                imeHandler.post(this::checkImePosition);
+                SystemClock.sleep(IME_WATCH_INTERVAL);
+            }
+        });
+
+        imeThread.start();
+    }
+
+    private void stopImeWatcher() {
+        imeWatcherGeneration++;
+
+        if(imeThread != null) imeThread.interrupt();
+    }
+
+    /**
+     * Fallback for releases without IME window insets: hides the taskbar when the keyboard pushes
+     * it up, and brings it back once it returns to its resting position.
+     */
+    private void checkImePosition() {
+        // A position change is only ever a guess at the keyboard being shown, so like the original
+        // check this keeps out of the way while the start menu is open.
+        if(layout == null || MenuHelper.getInstance().isStartMenuOpen()) return;
+
+        int[] location = new int[2];
+        layout.getLocationOnScreen(location);
+
+        if(location[1] == 0 || location[1] == currentTaskbarPosition)
+            return;
+
+        if(location[1] > currentTaskbarPosition) {
+            currentTaskbarPosition = location[1];
+
+            if(taskbarHiddenTemporarily)
+                tempShowTaskbar();
+        } else {
+            if(currentTaskbarPosition - location[1] == getNavBarSize())
+                currentTaskbarPosition = location[1];
+            else if(!taskbarHiddenTemporarily)
+                tempHideTaskbar();
+        }
     }
 
     private int getNavBarSize() {
@@ -1527,6 +1593,12 @@ public class TaskbarController extends UIController {
         U.unregisterReceiver(context, tempHideReceiver);
         U.unregisterReceiver(context, startMenuAppearReceiver);
         U.unregisterReceiver(context, startMenuDisappearReceiver);
+
+        stopImeWatcher();
+
+        try {
+            context.unregisterReceiver(screenReceiver);
+        } catch (IllegalArgumentException ignored) {}
 
         if(sysTrayEnabled) {
             TelephonyManager manager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);

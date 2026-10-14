@@ -49,6 +49,7 @@ import com.farmerbb.taskbar.util.Constants.PREF_DASHBOARD
 import com.farmerbb.taskbar.util.Constants.PREF_HIDE_FOREGROUND
 import com.farmerbb.taskbar.util.Constants.PREF_RECENTS_AMOUNT
 import com.farmerbb.taskbar.util.Constants.PREF_RECENTS_AMOUNT_APP_START
+import com.farmerbb.taskbar.util.Constants.PREF_RECENTS_AMOUNT_PAST_DAY
 import com.farmerbb.taskbar.util.Constants.PREF_RECENTS_AMOUNT_RUNNING_APPS_ONLY
 import com.farmerbb.taskbar.util.Constants.PREF_RECENTS_AMOUNT_SHOW_ALL
 import com.farmerbb.taskbar.util.Constants.PREF_START_BUTTON_IMAGE
@@ -272,7 +273,14 @@ class TaskbarControllerTest {
     fun testGetSearchInterval() {
         val permitTimeDeltaMillis: Long = 100
         prefs.edit().remove(PREF_RECENTS_AMOUNT).apply()
+        prefs.edit().remove(PREF_TIME_OF_SERVICE_START).apply()
+        // The default recents amount is "apps used after Taskbar start", and with no recorded
+        // service start time that means only apps used from now on
         var searchInterval = uiController.getSearchInterval(prefs)
+        Assert.assertEquals(System.currentTimeMillis().toFloat(), searchInterval.toFloat(),
+                permitTimeDeltaMillis.toFloat())
+        prefs.edit().putString(PREF_RECENTS_AMOUNT, PREF_RECENTS_AMOUNT_PAST_DAY).apply()
+        searchInterval = uiController.getSearchInterval(prefs)
         val lastDayTime = System.currentTimeMillis() - AlarmManager.INTERVAL_DAY
         Assert.assertEquals(lastDayTime.toFloat(), searchInterval.toFloat(),
                 permitTimeDeltaMillis.toFloat())

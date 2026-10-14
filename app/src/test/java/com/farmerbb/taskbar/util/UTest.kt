@@ -601,14 +601,16 @@ class UTest {
     fun testInitPrefsForNormalWithCanEnableFreeformAndHackOverrideFalse() {
         PowerMockito.spy(U::class.java)
         PowerMockito.`when`(U.canEnableFreeform(context)).thenReturn(true)
+        PowerMockito.`when`(U.hasFreeformSupport(context)).thenReturn(true)
         val prefs = U.getSharedPreferences(context)
-        prefs.edit().putBoolean(Constants.PREF_FREEFORM_HACK_OVERRIDE, false).apply()
+        prefs.edit()
+                .putBoolean(Constants.PREF_FREEFORM_HACK, false)
+                .putBoolean(Constants.PREF_FREEFORM_HACK_OVERRIDE, false)
+                .apply()
         U.initPrefs(context)
-        Assert.assertEquals(
-                U.hasFreeformSupport(context) && !U.isSamsungDevice(),
-                prefs.getBoolean(Constants.PREF_FREEFORM_HACK, false)
-        )
-        Assert.assertFalse(prefs.getBoolean(Constants.PREF_SAVE_WINDOW_SIZES, true))
+        // Freeform mode is off by default; the user has to opt in to it, even on devices
+        // which support it
+        Assert.assertFalse(prefs.getBoolean(Constants.PREF_FREEFORM_HACK, false))
         Assert.assertTrue(prefs.getBoolean(Constants.PREF_FREEFORM_HACK_OVERRIDE, false))
     }
 

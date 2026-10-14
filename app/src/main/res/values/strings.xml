@@ -295,6 +295,10 @@
     <string name="tb_refresh_frequency">%1$s seconds</string>
     <string name="tb_refresh_frequency_singular">1 second</string>
     <string name="tb_refresh_frequency_continuous">Continuous</string>
+    <string name="tb_refresh_frequency_manual">Manual</string>
+    <string name="tb_pref_title_only_refresh_manually">Only refresh manually</string>
+    <string name="tb_pref_sys_tray_manual">Not available while only refreshing manually</string>
+    <string name="tb_pref_description_only_refresh_manually">Never refresh the list of recent apps on a schedule. Press the refresh button on the taskbar to update the list.</string>
 
     <string name="tb_power_button_warning_title">Caution</string>
     <string name="tb_power_button_warning_message">Custom ROMs based on CyanogenMod / LineageOS have an issue where the power button does not work while the device is in freeform mode.\n\nPlease test your power button now.  If it does not work, then exercise caution when using freeform mode as you may lose the ability to wake the device from sleep if the screen times out.</string>
