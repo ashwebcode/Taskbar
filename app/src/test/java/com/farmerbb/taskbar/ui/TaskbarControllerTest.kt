@@ -400,6 +400,19 @@ class TaskbarControllerTest {
     }
 
     @Test
+    fun testGetScrollViewVisibilityOnShow() {
+        // The taskbar keeps its app list while it is collapsed, so showing it again reveals what
+        // is already drawn instead of holding it back for a redraw that a plain expand never
+        // triggers
+        Assert.assertEquals(View.VISIBLE.toLong(),
+                uiController.getScrollViewVisibilityOnShow(true).toLong())
+        // With nothing drawn yet the strip stays held back, since it is empty until the first
+        // refresh pass fills it in
+        Assert.assertEquals(View.INVISIBLE.toLong(),
+                uiController.getScrollViewVisibilityOnShow(false).toLong())
+    }
+
+    @Test
     @Config(shadows = [TaskbarShadowScrollView::class])
     fun testScrollTaskbarForScrollViewLocation() {
         // We only provide enhanced ShadowScrollView with scrollTo supported, so we should

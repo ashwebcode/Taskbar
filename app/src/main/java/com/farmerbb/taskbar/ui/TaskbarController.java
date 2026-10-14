@@ -1470,7 +1470,8 @@ public class TaskbarController extends UIController {
                 navbarButtons.setVisibility(View.VISIBLE);
 
             if(isShowingRecents && scrollView.getVisibility() == View.GONE)
-                scrollView.setVisibility(View.INVISIBLE);
+                scrollView.setVisibility(
+                        getScrollViewVisibilityOnShow(currentTaskbarIds.size() > 0));
 
             if(sysTrayEnabled)
                 sysTrayParentLayout.setVisibility(View.VISIBLE);
@@ -1485,6 +1486,18 @@ public class TaskbarController extends UIController {
 
             U.newHandler().post(() -> U.sendBroadcast(context, ACTION_SHOW_START_MENU_SPACE));
         }
+    }
+
+    /**
+     * The visibility the app list comes back with when the taskbar is shown again.  A list that
+     * is already drawn is revealed right away: expanding normally returns the same recents, so
+     * the redraw that used to lift the INVISIBLE hold never runs, and the icons would stay
+     * hidden.  With nothing retained the hold stays, since the strip is genuinely empty until
+     * the first refresh pass fills it in.
+     */
+    @VisibleForTesting
+    int getScrollViewVisibilityOnShow(boolean hasRetainedRecents) {
+        return hasRetainedRecents ? View.VISIBLE : View.INVISIBLE;
     }
 
     private void hideTaskbar(boolean clearVariables) {
