@@ -602,27 +602,37 @@ class UTest {
     }
 
     @Test
-    fun testGetTaskbarStartMargin() {
+    fun testGetTaskbarMargins() {
         val prefs = U.getSharedPreferences(context)
 
         // With nothing stored the taskbar's contents are not inset at all
         Assert.assertEquals(0, U.getTaskbarStartMarginDp(context))
         Assert.assertEquals(0, U.getTaskbarStartMargin(context))
+        Assert.assertEquals(0, U.getTaskbarEndMarginDp(context))
+        Assert.assertEquals(0, U.getTaskbarEndMargin(context))
 
         // Nonsense values fall back to the default rather than crashing
-        prefs.edit().putString(Constants.PREF_TASKBAR_START_MARGIN, "garbage").apply()
+        prefs.edit().putString(Constants.PREF_TASKBAR_START_MARGIN, "garbage")
+                .putString(Constants.PREF_TASKBAR_END_MARGIN, "garbage").apply()
         Assert.assertEquals(0, U.getTaskbarStartMarginDp(context))
+        Assert.assertEquals(0, U.getTaskbarEndMarginDp(context))
 
         // Negative values are treated as no margin
-        prefs.edit().putString(Constants.PREF_TASKBAR_START_MARGIN, "-10").apply()
+        prefs.edit().putString(Constants.PREF_TASKBAR_START_MARGIN, "-10")
+                .putString(Constants.PREF_TASKBAR_END_MARGIN, "-10").apply()
         Assert.assertEquals(0, U.getTaskbarStartMarginDp(context))
+        Assert.assertEquals(0, U.getTaskbarEndMarginDp(context))
 
-        // The margin never grows past the maximum, which is what the picker offers
+        // Neither margin grows past the maximum, which is what the pickers offer
         prefs.edit().putString(Constants.PREF_TASKBAR_START_MARGIN,
-                Integer.toString(U.MAX_TASKBAR_START_MARGIN + 100)).apply()
-        Assert.assertEquals(U.MAX_TASKBAR_START_MARGIN, U.getTaskbarStartMarginDp(context))
+                Integer.toString(U.MAX_TASKBAR_MARGIN + 100))
+                .putString(Constants.PREF_TASKBAR_END_MARGIN,
+                        Integer.toString(U.MAX_TASKBAR_MARGIN + 100)).apply()
+        Assert.assertEquals(U.MAX_TASKBAR_MARGIN, U.getTaskbarStartMarginDp(context))
+        Assert.assertEquals(U.MAX_TASKBAR_MARGIN, U.getTaskbarEndMarginDp(context))
 
-        prefs.edit().remove(Constants.PREF_TASKBAR_START_MARGIN).apply()
+        prefs.edit().remove(Constants.PREF_TASKBAR_START_MARGIN)
+                .remove(Constants.PREF_TASKBAR_END_MARGIN).apply()
     }
 
     @Test

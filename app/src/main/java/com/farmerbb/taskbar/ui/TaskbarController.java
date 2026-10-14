@@ -301,15 +301,31 @@ public class TaskbarController extends UIController {
         taskbarContext = U.wrapTaskbarContext(context);
         layout = (LinearLayout) LayoutInflater.from(taskbarContext).inflate(layoutId, null);
 
-        // Inset the taskbar from the edge of the screen it is attached to, so that the icons by a
-        // curved edge stay within reach
+        // Inset the taskbar from the screen edges it reaches, so that the icons and the collapse
+        // button by a curved edge stay within reach
         int startMargin = U.getTaskbarStartMargin(context);
-        if(startMargin > 0) {
-            if(TaskbarPosition.isRight(taskbarPosition))
-                layout.setPadding(0, 0, startMargin, 0);
+        int endMargin = U.getTaskbarEndMargin(context);
+        boolean anchoredRight = TaskbarPosition.isRight(taskbarPosition);
+
+        int left = anchoredRight ? 0 : startMargin;
+        int right = anchoredRight ? startMargin : 0;
+        int top = 0;
+        int bottom = 0;
+
+        if(TaskbarPosition.isVertical(taskbarPosition)) {
+            // A vertical taskbar runs down the screen, so its other end is the far end of that
+            // column rather than the far side of the window
+            if(TaskbarPosition.isBottom(taskbarPosition))
+                top = endMargin;
             else
-                layout.setPadding(startMargin, 0, 0, 0);
-        }
+                bottom = endMargin;
+        } else if(anchoredRight)
+            left = endMargin;
+        else
+            right = endMargin;
+
+        layout.setPadding(layout.getPaddingLeft() + left, layout.getPaddingTop() + top,
+                layout.getPaddingRight() + right, layout.getPaddingBottom() + bottom);
 
         taskbar = layout.findViewById(R.id.taskbar);
         scrollView = layout.findViewById(R.id.taskbar_scrollview);
@@ -1113,7 +1129,8 @@ public class TaskbarController extends UIController {
         if(TaskbarPosition.isVertical(context)) {
             maxScreenSize = Math.max(0, display.height
                     - U.getStatusBarHeight(context)
-                    - baseTotal);
+                    - baseTotal
+                    - U.getTaskbarEndMargin(context));
 
             params.height = (int) Math.min(maxRecentsSize, maxScreenSize)
                     + context.getResources().getDimensionPixelSize(R.dimen.tb_divider_size);
@@ -1155,7 +1172,8 @@ public class TaskbarController extends UIController {
         } else {
             maxScreenSize = Math.max(0, display.width
                     - baseTotal
-                    - U.getTaskbarStartMargin(context));
+                    - U.getTaskbarStartMargin(context)
+                    - U.getTaskbarEndMargin(context));
 
             params.width = (int) Math.min(maxRecentsSize, maxScreenSize)
                     + context.getResources().getDimensionPixelSize(R.dimen.tb_divider_size);

@@ -837,25 +837,23 @@ public class U {
         return isLayoutOverNavbarSupported() && getTaskbarVerticalOffset(context) > 0;
     }
 
-    public static final int DEFAULT_TASKBAR_START_MARGIN = 0;
-    public static final int MAX_TASKBAR_START_MARGIN = 48;
+    public static final int DEFAULT_TASKBAR_MARGIN = 0;
+    public static final int MAX_TASKBAR_MARGIN = 48;
 
     /**
      * How far, in dp, the taskbar's contents should be inset from the edge of the screen the
      * taskbar is attached to.  Kept in dp so the setting survives a change of display density.
      */
     public static int getTaskbarStartMarginDp(Context context) {
-        SharedPreferences pref = getSharedPreferences(context);
+        return getTaskbarMarginDp(context, PREF_TASKBAR_START_MARGIN);
+    }
 
-        int margin;
-        try {
-            margin = Integer.parseInt(pref.getString(PREF_TASKBAR_START_MARGIN,
-                    Integer.toString(DEFAULT_TASKBAR_START_MARGIN)));
-        } catch(NumberFormatException e) {
-            margin = DEFAULT_TASKBAR_START_MARGIN;
-        }
-
-        return Math.max(0, Math.min(MAX_TASKBAR_START_MARGIN, margin));
+    /**
+     * How far, in dp, the taskbar's contents should be inset from the other end of the taskbar,
+     * which is where the collapse button sits.
+     */
+    public static int getTaskbarEndMarginDp(Context context) {
+        return getTaskbarMarginDp(context, PREF_TASKBAR_END_MARGIN);
     }
 
     /**
@@ -865,6 +863,29 @@ public class U {
         float density = context.getResources().getDisplayMetrics().density;
 
         return Math.round(getTaskbarStartMarginDp(context) * density);
+    }
+
+    /**
+     * The taskbar's end margin in pixels.
+     */
+    public static int getTaskbarEndMargin(Context context) {
+        float density = context.getResources().getDisplayMetrics().density;
+
+        return Math.round(getTaskbarEndMarginDp(context) * density);
+    }
+
+    private static int getTaskbarMarginDp(Context context, String preference) {
+        SharedPreferences pref = getSharedPreferences(context);
+
+        int margin;
+        try {
+            margin = Integer.parseInt(pref.getString(preference,
+                    Integer.toString(DEFAULT_TASKBAR_MARGIN)));
+        } catch(NumberFormatException e) {
+            margin = DEFAULT_TASKBAR_MARGIN;
+        }
+
+        return Math.max(0, Math.min(MAX_TASKBAR_MARGIN, margin));
     }
 
     private static int getSystemDimen(Context context, String id) {

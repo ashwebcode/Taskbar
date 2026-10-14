@@ -289,9 +289,11 @@
     <string name="tb_taskbar_offset_dp">%1$d dp lower</string>
     <string name="tb_taskbar_offset_unsupported">Not supported on this Android version</string>
     <string name="tb_pref_title_taskbar_start_margin">Start margin</string>
-    <string name="tb_taskbar_start_margin_default">No margin</string>
-    <string name="tb_taskbar_start_margin_dp">%1$d dp</string>
+    <string name="tb_pref_title_taskbar_end_margin">End margin</string>
+    <string name="tb_taskbar_margin_default">No margin</string>
+    <string name="tb_taskbar_margin_dp">%1$d dp</string>
     <string name="tb_taskbar_start_margin_blurb">Insets the taskbar from the edge of the screen it is attached to.  Useful when a curved screen edge makes the outermost icons hard to tap.</string>
+    <string name="tb_taskbar_end_margin_blurb">Insets the other end of the taskbar.  Useful when the collapse button lands on a curved screen edge and gets cut off.</string>
     <string name="tb_reset_colors">Reset colors to default</string>
 
     <string name="tb_visual_feedback">Visual feedback when selecting icons</string>
