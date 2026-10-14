@@ -837,6 +837,36 @@ public class U {
         return isLayoutOverNavbarSupported() && getTaskbarVerticalOffset(context) > 0;
     }
 
+    public static final int DEFAULT_TASKBAR_START_MARGIN = 0;
+    public static final int MAX_TASKBAR_START_MARGIN = 48;
+
+    /**
+     * How far, in dp, the taskbar's contents should be inset from the edge of the screen the
+     * taskbar is attached to.  Kept in dp so the setting survives a change of display density.
+     */
+    public static int getTaskbarStartMarginDp(Context context) {
+        SharedPreferences pref = getSharedPreferences(context);
+
+        int margin;
+        try {
+            margin = Integer.parseInt(pref.getString(PREF_TASKBAR_START_MARGIN,
+                    Integer.toString(DEFAULT_TASKBAR_START_MARGIN)));
+        } catch(NumberFormatException e) {
+            margin = DEFAULT_TASKBAR_START_MARGIN;
+        }
+
+        return Math.max(0, Math.min(MAX_TASKBAR_START_MARGIN, margin));
+    }
+
+    /**
+     * The taskbar's start margin in pixels.
+     */
+    public static int getTaskbarStartMargin(Context context) {
+        float density = context.getResources().getDisplayMetrics().density;
+
+        return Math.round(getTaskbarStartMarginDp(context) * density);
+    }
+
     private static int getSystemDimen(Context context, String id) {
         context = getDisplayContext(context);
 

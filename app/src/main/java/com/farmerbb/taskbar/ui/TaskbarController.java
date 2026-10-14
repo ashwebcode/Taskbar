@@ -300,6 +300,17 @@ public class TaskbarController extends UIController {
 
         taskbarContext = U.wrapTaskbarContext(context);
         layout = (LinearLayout) LayoutInflater.from(taskbarContext).inflate(layoutId, null);
+
+        // Inset the taskbar from the edge of the screen it is attached to, so that the icons by a
+        // curved edge stay within reach
+        int startMargin = U.getTaskbarStartMargin(context);
+        if(startMargin > 0) {
+            if(TaskbarPosition.isRight(taskbarPosition))
+                layout.setPadding(0, 0, startMargin, 0);
+            else
+                layout.setPadding(startMargin, 0, 0, 0);
+        }
+
         taskbar = layout.findViewById(R.id.taskbar);
         scrollView = layout.findViewById(R.id.taskbar_scrollview);
 
@@ -1142,7 +1153,9 @@ public class TaskbarController extends UIController {
                 } catch (NullPointerException ignored) {}
             }
         } else {
-            maxScreenSize = Math.max(0, display.width - baseTotal);
+            maxScreenSize = Math.max(0, display.width
+                    - baseTotal
+                    - U.getTaskbarStartMargin(context));
 
             params.width = (int) Math.min(maxRecentsSize, maxScreenSize)
                     + context.getResources().getDimensionPixelSize(R.dimen.tb_divider_size);

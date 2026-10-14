@@ -602,6 +602,30 @@ class UTest {
     }
 
     @Test
+    fun testGetTaskbarStartMargin() {
+        val prefs = U.getSharedPreferences(context)
+
+        // With nothing stored the taskbar's contents are not inset at all
+        Assert.assertEquals(0, U.getTaskbarStartMarginDp(context))
+        Assert.assertEquals(0, U.getTaskbarStartMargin(context))
+
+        // Nonsense values fall back to the default rather than crashing
+        prefs.edit().putString(Constants.PREF_TASKBAR_START_MARGIN, "garbage").apply()
+        Assert.assertEquals(0, U.getTaskbarStartMarginDp(context))
+
+        // Negative values are treated as no margin
+        prefs.edit().putString(Constants.PREF_TASKBAR_START_MARGIN, "-10").apply()
+        Assert.assertEquals(0, U.getTaskbarStartMarginDp(context))
+
+        // The margin never grows past the maximum, which is what the picker offers
+        prefs.edit().putString(Constants.PREF_TASKBAR_START_MARGIN,
+                Integer.toString(U.MAX_TASKBAR_START_MARGIN + 100)).apply()
+        Assert.assertEquals(U.MAX_TASKBAR_START_MARGIN, U.getTaskbarStartMarginDp(context))
+
+        prefs.edit().remove(Constants.PREF_TASKBAR_START_MARGIN).apply()
+    }
+
+    @Test
     fun testInitPrefsForBlissOS() {
         PowerMockito.spy(U::class.java)
         PowerMockito.`when`(U.isBlissOs(ArgumentMatchers.any(Context::class.java)))
