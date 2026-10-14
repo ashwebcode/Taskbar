@@ -41,6 +41,10 @@
         android:key="taskbar_size"
         android:title="@string/tb_pref_title_taskbar_size" />
 
+    <Preference
+        android:key="taskbar_vertical_offset"
+        android:title="@string/tb_pref_title_taskbar_vertical_offset" />
+
     <ListPreference
         android:defaultValue="default"
         android:entries="@array/tb_pref_start_button_image_list"

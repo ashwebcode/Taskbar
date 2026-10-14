@@ -19,6 +19,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.provider.Settings;
 import android.view.View;
+import android.view.WindowManager;
 
 import com.farmerbb.taskbar.BuildConfig;
 import com.farmerbb.taskbar.R;
@@ -70,6 +71,44 @@ public abstract class UIController {
                 && !U.isChromeOs(context)
                 && !U.isShowHideNavbarSupported()
                 && TaskbarPosition.isBottom(context) ? U.getNavbarHeight(context) : -1;
+    }
+
+    /**
+     * How far, in pixels, the windows anchored to the bottom of the screen should be lowered,
+     * so that the taskbar sits closer to the bottom edge than it otherwise would.
+     */
+    protected int getVerticalOffset(Context context) {
+        if(!TaskbarPosition.isBottom(context) || !U.isTaskbarVerticalOffsetEnabled(context))
+            return 0;
+
+        return U.getTaskbarVerticalOffset(context);
+    }
+
+    /**
+     * Adds the layout flags a window needs in order to be drawn over the strip of the screen
+     * that the system navigation bar reserves for itself, which is what allows the taskbar to
+     * be lowered into that space.
+     */
+    protected int applyVerticalOffsetFlags(int flags, Context context) {
+        if(getVerticalOffset(context) <= 0)
+            return flags;
+
+        return flags
+                | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+    }
+
+    /**
+     * The bottom margin to use for a window anchored to the bottom of the screen.  Once a
+     * vertical offset is set, the window is laid out against the bottom of the screen itself, so
+     * the offset is measured from there rather than from the top of the navigation bar.
+     */
+    protected int getBottomMarginWithOffset(Context context) {
+        int offset = getVerticalOffset(context);
+        if(offset <= 0)
+            return getBottomMargin(context);
+
+        return U.getNavbarHeight(context) - offset;
     }
 
     protected void applyMarginFix(UIHost host, View layout, ViewParams params) {

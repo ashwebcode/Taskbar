@@ -58,6 +58,7 @@ public class AppearanceFragment extends SettingsFragment {
         findPreference(PREF_BACKGROUND_TINT_PREF).setOnPreferenceClickListener(this);
         findPreference(PREF_ACCENT_COLOR_PREF).setOnPreferenceClickListener(this);
         findPreference(PREF_TASKBAR_SIZE).setOnPreferenceClickListener(this);
+        findPreference(PREF_TASKBAR_VERTICAL_OFFSET).setOnPreferenceClickListener(this);
 
         if(U.isAndroidGeneric(getActivity())) {
             String[] array = getResources().getStringArray(R.array.tb_pref_start_button_image_list);
@@ -82,6 +83,7 @@ public class AppearanceFragment extends SettingsFragment {
         findPreference(PREF_BACKGROUND_TINT_PREF).setSummary("#" + String.format("%08x", U.getBackgroundTint(getActivity())).toUpperCase());
         findPreference(PREF_ACCENT_COLOR_PREF).setSummary("#" + String.format("%08x", U.getAccentColor(getActivity())).toUpperCase());
         findPreference(PREF_TASKBAR_SIZE).setSummary(getTaskbarSizeSummary());
+        findPreference(PREF_TASKBAR_VERTICAL_OFFSET).setSummary(getTaskbarVerticalOffsetSummary());
     }
 
     @Override
@@ -159,6 +161,9 @@ public class AppearanceFragment extends SettingsFragment {
                 break;
             case PREF_TASKBAR_SIZE:
                 showTaskbarSizePicker();
+                break;
+            case PREF_TASKBAR_VERTICAL_OFFSET:
+                showTaskbarVerticalOffsetPicker();
                 break;
         }
 
@@ -371,6 +376,57 @@ public class AppearanceFragment extends SettingsFragment {
                     ).apply();
 
                     findPreference(PREF_TASKBAR_SIZE).setSummary(getTaskbarSizeSummary());
+
+                    U.restartTaskbar(getActivity());
+                })
+                .setNegativeButton(R.string.tb_action_cancel, null)
+                .show();
+    }
+
+    private String getTaskbarVerticalOffsetSummary() {
+        int offset = U.getTaskbarVerticalOffsetDp(getActivity());
+
+        return offset == 0
+                ? getString(R.string.tb_taskbar_offset_default)
+                : getString(R.string.tb_taskbar_offset_dp, offset);
+    }
+
+    private void showTaskbarVerticalOffsetPicker() {
+        final SharedPreferences pref = U.getSharedPreferences(getActivity());
+
+        ScrollView dialogLayout = (ScrollView) View.inflate(getActivity(), R.layout.tb_taskbar_offset_pref, null);
+
+        final TextView offsetValue = dialogLayout.findViewById(R.id.taskbar_offset_value);
+        final SeekBar offsetSeekBar = dialogLayout.findViewById(R.id.taskbar_offset_seekbar);
+        offsetSeekBar.setMax(U.getMaxTaskbarVerticalOffsetDp(getActivity()));
+
+        offsetSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                offsetValue.setText(progress == 0
+                        ? getString(R.string.tb_taskbar_offset_default)
+                        : getString(R.string.tb_taskbar_offset_dp, progress));
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        offsetSeekBar.setProgress(U.getTaskbarVerticalOffsetDp(getActivity()));
+
+        new AlertDialog.Builder(getActivity())
+                .setTitle(R.string.tb_pref_title_taskbar_vertical_offset)
+                .setView(dialogLayout)
+                .setPositiveButton(R.string.tb_action_ok, (dialog, which) -> {
+                    pref.edit().putString(
+                            PREF_TASKBAR_VERTICAL_OFFSET,
+                            Integer.toString(offsetSeekBar.getProgress())
+                    ).apply();
+
+                    findPreference(PREF_TASKBAR_VERTICAL_OFFSET).setSummary(getTaskbarVerticalOffsetSummary());
 
                     U.restartTaskbar(getActivity());
                 })

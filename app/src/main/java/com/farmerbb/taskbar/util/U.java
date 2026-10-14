@@ -763,6 +763,55 @@ public class U {
         return isNavbarHidden ? 0 : getSystemDimen(context, "navigation_bar_height");
     }
 
+    public static final int DEFAULT_TASKBAR_VERTICAL_OFFSET = 0;
+
+    /**
+     * Roughly how tall the navigation bar is on this device, in dp.  Used to size the picker for
+     * {@link #getTaskbarVerticalOffset(Context)}.
+     */
+    public static int getMaxTaskbarVerticalOffsetDp(Context context) {
+        float density = context.getResources().getDisplayMetrics().density;
+        int navbarHeightDp = Math.round(getNavbarHeight(context) / density);
+
+        // Fall back to a typical navigation bar height, so the picker stays usable on devices
+        // that use gesture navigation and report a much smaller navbar
+        return Math.max(24, navbarHeightDp);
+    }
+
+    /**
+     * How far below its default position the user wants the taskbar to sit, in dp.  Kept in dp
+     * so the setting survives a change of display density.
+     */
+    public static int getTaskbarVerticalOffsetDp(Context context) {
+        SharedPreferences pref = getSharedPreferences(context);
+
+        int offset;
+        try {
+            offset = Integer.parseInt(pref.getString(PREF_TASKBAR_VERTICAL_OFFSET,
+                    Integer.toString(DEFAULT_TASKBAR_VERTICAL_OFFSET)));
+        } catch(NumberFormatException e) {
+            offset = DEFAULT_TASKBAR_VERTICAL_OFFSET;
+        }
+
+        return Math.max(0, Math.min(getMaxTaskbarVerticalOffsetDp(context), offset));
+    }
+
+    /**
+     * The taskbar offset in pixels.  Clamped to the height of the navigation bar, which is both
+     * the space below the taskbar that the user can see, and the point at which the taskbar sits
+     * flush against the bottom of the screen.
+     */
+    public static int getTaskbarVerticalOffset(Context context) {
+        float density = context.getResources().getDisplayMetrics().density;
+        int offset = Math.round(getTaskbarVerticalOffsetDp(context) * density);
+
+        return Math.min(offset, getNavbarHeight(context));
+    }
+
+    public static boolean isTaskbarVerticalOffsetEnabled(Context context) {
+        return getTaskbarVerticalOffset(context) > 0;
+    }
+
     private static int getSystemDimen(Context context, String id) {
         context = getDisplayContext(context);
 

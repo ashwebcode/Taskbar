@@ -571,6 +571,37 @@ class UTest {
     }
 
     @Test
+    fun testGetTaskbarVerticalOffset() {
+        val prefs = U.getSharedPreferences(context)
+        val maxOffsetDp = U.getMaxTaskbarVerticalOffsetDp(context)
+
+        // With nothing stored the taskbar keeps its default position
+        Assert.assertEquals(0, U.getTaskbarVerticalOffsetDp(context))
+        Assert.assertEquals(0, U.getTaskbarVerticalOffset(context))
+        Assert.assertFalse(U.isTaskbarVerticalOffsetEnabled(context))
+
+        // Nonsense values fall back to the default rather than crashing
+        prefs.edit().putString(Constants.PREF_TASKBAR_VERTICAL_OFFSET, "garbage").apply()
+        Assert.assertEquals(0, U.getTaskbarVerticalOffsetDp(context))
+
+        // Negative values are treated as no offset
+        prefs.edit().putString(Constants.PREF_TASKBAR_VERTICAL_OFFSET, "-10").apply()
+        Assert.assertEquals(0, U.getTaskbarVerticalOffsetDp(context))
+
+        // The offset never exceeds the height of the navigation bar, which is both the space
+        // below the taskbar and the point at which it sits flush with the bottom of the screen
+        prefs.edit().putString(Constants.PREF_TASKBAR_VERTICAL_OFFSET,
+                Integer.toString(maxOffsetDp + 100)).apply()
+        Assert.assertEquals(maxOffsetDp, U.getTaskbarVerticalOffsetDp(context))
+        Assert.assertEquals(U.getNavbarHeight(context), U.getTaskbarVerticalOffset(context))
+
+        prefs.edit().putString(Constants.PREF_TASKBAR_VERTICAL_OFFSET, "0").apply()
+        Assert.assertEquals(0, U.getTaskbarVerticalOffset(context))
+
+        prefs.edit().remove(Constants.PREF_TASKBAR_VERTICAL_OFFSET).apply()
+    }
+
+    @Test
     fun testInitPrefsForBlissOS() {
         PowerMockito.spy(U::class.java)
         PowerMockito.`when`(U.isBlissOs(ArgumentMatchers.any(Context::class.java)))
